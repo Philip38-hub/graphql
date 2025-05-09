@@ -9,6 +9,11 @@ export class ProfilePage {
   }
 
   async render() {
+    const token = api.getToken();
+    if (!token) {
+      window.location.hash = '#/login';
+      return document.createElement('div');
+    }
     const wrapper = document.createElement('div');
     wrapper.innerHTML = `<h2>Your Profile</h2><p>Loading...</p>`;
     this.container.appendChild(wrapper);
@@ -19,14 +24,23 @@ export class ProfilePage {
 
       wrapper.innerHTML = `
         <h2>Welcome, ${userData.login}</h2>
-        <div><strong>User ID:</strong> ${userData.id}</div>
-        <div><strong>Total XP:</strong> ${statsData.totalXP}</div>
-        <div><strong>Audit Pass Ratio:</strong> ${statsData.auditRatio}</div>
-        <hr />
+        <div class="profile-info-cards">
+          <div class="profile-card active">
+            <h3>User ID</h3>
+            <p>${userData.id}</p>
+          </div>
+          <div class="profile-card">
+            <h3>Total XP</h3>
+            <p>${statsData.totalXP}</p>
+          </div>
+          <div class="profile-card">
+            <h3>Audit Pass Ratio</h3>
+            <p>${statsData.auditRatio}</p>
+          </div>
+        </div>
         <h3>Graphs</h3>
         <div id="graph-xp"></div>
         <div id="graph-passfail"></div>
-
         <button id="logout-btn">Logout</button>
       `;
 
@@ -46,6 +60,25 @@ export class ProfilePage {
     } catch (err) {
       wrapper.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
     }
+
+    // Focus effect on scroll
+    const cardContainer = wrapper.querySelector('.profile-info-cards');
+    if (cardContainer) {
+      cardContainer.addEventListener('scroll', () => {
+        const cards = cardContainer.querySelectorAll('.profile-card');
+        const midX = cardContainer.scrollLeft + cardContainer.offsetWidth / 2;
+
+        cards.forEach(card => {
+          const cardMid = card.offsetLeft + card.offsetWidth / 2;
+          const dist = Math.abs(cardMid - midX);
+          card.classList.toggle('active', dist < card.offsetWidth / 2);
+        });
+      });
+
+      // Trigger initial state
+      cardContainer.dispatchEvent(new Event('scroll'));
+    }
+
     // Render XP graph
     const xpDiv = wrapper.querySelector('#graph-xp');
     this.renderXPGraph(xpDiv); // Load XP per project graph
@@ -53,7 +86,7 @@ export class ProfilePage {
     // Load pass/fail chart
     const passFailDiv = wrapper.querySelector('#graph-passfail');
     this.renderPassFailChart(passFailDiv);
-    
+
     return this.container;
   }
 
