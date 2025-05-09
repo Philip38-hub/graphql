@@ -1,5 +1,6 @@
 // js/auth.js
 import { api } from './api.js';
+import { profileData } from './queries.js';
 
 export class AuthPage {
   constructor() {
@@ -33,6 +34,11 @@ export class AuthPage {
 
       try {
         await api.login(identifier, password);
+        
+        // Fetch all profile data before redirecting
+        errorEl.textContent = 'Loading profile data...';
+        await profileData.fetchAllData();
+        
         window.location.hash = '#/profile';
       } catch (err) {
         console.error(err);
