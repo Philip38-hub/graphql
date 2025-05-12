@@ -1,135 +1,272 @@
 /* General Reset & Base Styles */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #f7f9fc;
+  color: #333;
+  padding: 1rem;
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Loading State */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.loading::after {
+  content: '';
+  width: 1em;
+  height: 1em;
+  border: 2px solid #ddd;
+  border-top: 2px solid #3498db;
+  border-radius: 50%;
+  margin-left: 0.5em;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error Message */
+.error-message {
+  text-align: center;
+  padding: 2rem;
+  margin: 2rem auto;
+  max-width: 500px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.error-message h2 {
+  color: #e74c3c;
+  margin-bottom: 1rem;
+}
+
+/* ---------- Auth Page ---------- */
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
+}
+
+.login-form {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  min-width: 300px;
+}
+
+.login-form h2 {
+  margin-bottom: 1rem;
+}
+
+.login-form label {
+  display: block;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.login-form button {
+  margin-top: 1rem;
+  width: 100%;
+  padding: 0.6rem;
+  background: #3366cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* ---------- Profile Layout ---------- */
+.profile-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  
-  body {
-    font-family: 'Segoe UI', sans-serif;
-    background: #f7f9fc;
-    color: #333;
+}
+
+.profile-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.profile-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.profile-header h2 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.8rem;
+}
+
+/* Info Cards */
+.profile-stats {
+  margin-bottom: 2rem;
+}
+
+.profile-info-cards {
+  display: flex;
+  overflow-x: auto;
+  gap: 1.5rem;
+  padding: 0.5rem;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.profile-card {
+  flex: 0 0 300px;
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  scroll-snap-align: center;
+  transform: scale(0.95);
+  transition: all 0.3s ease;
+}
+
+.profile-card.active {
+  transform: scale(1);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.profile-card h3 {
+  margin-bottom: 0.75rem;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.profile-card p {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #3498db;
+  margin: 0;
+}
+
+/* Graph Section */
+.profile-graphs {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  margin: 2rem 0;
+}
+
+.graph-container {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.graph-container h3 {
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.graph {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.graph svg {
+  max-width: 100%;
+  height: auto;
+  opacity: 0;
+  transition: opacity 0.5s ease-in;
+}
+
+.graph svg.loaded {
+  opacity: 1;
+}
+
+/* Footer & Logout Button */
+.profile-footer {
+  text-align: center;
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+#logout-btn {
+  display: inline-block;
+  padding: 0.8rem 1.5rem;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+#logout-btn:hover {
+  background: #c0392b;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .profile-content {
     padding: 1rem;
   }
-  
-  #app {
-    max-width: 960px;
-    margin: 0 auto;
-  }
-  
-  /* ---------- Auth Page ---------- */
-  .auth-page {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 80vh;
-  }
-  
-  .login-form {
-    background: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    min-width: 300px;
-  }
-  
-  .login-form h2 {
-    margin-bottom: 1rem;
-  }
-  
-  .login-form label {
-    display: block;
-    margin: 0.75rem 0 0.25rem;
-  }
-  
-  .login-form input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  .login-form button {
-    margin-top: 1rem;
-    width: 100%;
-    padding: 0.6rem;
-    background: #3366cc;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  /* ---------- Profile Layout ---------- */
-  .profile-page h2 {
-    margin-bottom: 1rem;
-  }
-  
-  /* Info Cards (scrollable container) */
+
   .profile-info-cards {
-    display: flex;
-    overflow-x: auto;
+    flex-direction: column;
     gap: 1rem;
-    margin-bottom: 2rem;
-    scroll-snap-type: x mandatory;
   }
-  
+
   .profile-card {
-      flex: 0 0 300px;
-      background: white;
-      border-radius: 10px;
-      padding: 1rem;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      scroll-snap-align: center;
-      transform: scale(0.95);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .profile-card.active {
-        transform: scale(1);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-    }
-    
-    .profile-card h3 {
-        margin-bottom: 0.5rem;
-    }
-  
-    #graph-area svg {
-        margin: 2rem auto;
-        display: block;
-    }
-    
-    svg {
-        opacity: 0;
-        transition: opacity 0.5s ease-in;
-      }
-      svg.loaded {
-        opacity: 1;
-      }
-  /* Logout button */
-  #logout-btn {
-    display: inline-block;
-    margin-top: 2rem;
-    background: #d9534f;
-    color: white;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: 4px;
-    cursor: pointer;
+    flex: none;
+    width: 100%;
+    transform: none !important;
   }
-  
-  /* ---------- Responsive Styles ---------- */
-  @media (max-width: 768px) {
-    .profile-info-cards {
-      flex-direction: column;
-      overflow-x: visible;
-    }
-  
-    .profile-card {
-      width: 100%;
-      scroll-snap-align: none;
-      transform: none !important;
-    }
+
+  .profile-graphs {
+    grid-template-columns: 1fr;
   }
-  
-  
+
+  .graph {
+    min-height: 250px;
+  }
+}

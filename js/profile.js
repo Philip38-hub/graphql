@@ -1,129 +1,190 @@
 // js/profile.js
 import { api } from './api.js';
 import { BarGraph, PieChart } from './graph.js';
+import { profileData } from './queries.js';
 
 export class ProfilePage {
   constructor() {
-    this.container = document.createElement('div');
-    this.container.className = 'profile-page';
+    // Create main container
+    const container = document.createElement('div');
+    container.className = 'profile-page';
+    this.container = container;
+
+    // Create content wrapper
+    const content = document.createElement('div');
+    content.className = 'profile-content';
+    this.content = content;
+    
+    // Add content to container
+    container.appendChild(content);
+    
+    console.log('ProfilePage initialized');
   }
 
   async render() {
+    console.log('Starting profile render');
+    
+    // Check authentication
     const token = api.getToken();
     if (!token) {
       window.location.hash = '#/login';
-      return document.createElement('div');
+      return this.container;
     }
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = `<h2>Your Profile</h2><p>Loading...</p>`;
-    this.container.appendChild(wrapper);
+
+    // Show loading state
+    this.content.innerHTML = '<h2>Loading profile data...</h2>';
 
     try {
-      // Fetch all data at once
+      // Fetch data
       await profileData.fetchAllData();
       const userData = profileData.getUserData();
       const statsData = profileData.getStats();
+      
+      console.log('Rendering with data:', { userData, statsData });
 
-      wrapper.innerHTML = `
-        <h2>Welcome, ${userData.login}</h2>
-        <div class="profile-info-cards">
-          <div class="profile-card active">
-            <h3>User ID</h3>
-            <p>${userData.id}</p>
-          </div>
-          <div class="profile-card">
-            <h3>Total XP</h3>
-            <p>${statsData.totalXP}</p>
-          </div>
-          <div class="profile-card">
-            <h3>Audit Pass Ratio</h3>
-            <p>${statsData.auditRatio}</p>
-          </div>
-        </div>
-        <h3>Graphs</h3>
-        <div id="graph-xp"></div>
-        <div id="graph-passfail"></div>
-        <button id="logout-btn">Logout</button>
+      // Build content
+      this.content.innerHTML = `
+        <header class="profile-header">
+          <h2>Welcome${userData ? `, ${userData.login}` : ''}</h2>
+        </header>
+
+        <main class="profile-main">
+          <section class="profile-stats">
+            <div class="profile-info-cards">
+              <div class="profile-card active">
+                <h3>User ID</h3>
+                <p>${userData ? userData.id : 'No data'}</p>
+              </div>
+              <div class="profile-card">
+                <h3>Total XP</h3>
+                <p>${statsData ? statsData.totalXP.toLocaleString() : 'No data'}</p>
+              </div>
+              <div class="profile-card">
+                <h3>Audit Pass Ratio</h3>
+                <p>${statsData ? statsData.auditRatio : 'No data'}</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="profile-graphs">
+            <div class="graph-container">
+              <h3>XP Distribution</h3>
+              <div id="graph-xp"></div>
+            </div>
+            <div class="graph-container">
+              <h3>Audit Results</h3>
+              <div id="graph-passfail"></div>
+            </div>
+          </section>
+        </main>
+
+        <footer class="profile-footer">
+          <button id="logout-btn">Logout</button>
+        </footer>
       `;
 
-      wrapper.querySelector('#logout-btn').addEventListener('click', () => {
-        api.clearToken();
-        window.location.hash = '#/login';
-        
-        // // render graphs in graph area
-        // const graph = new BarGraph([...], { title: 'XP', barColor: '#007bff' });
-        // document.getElementById('graph-area').appendChild(graph.render());
+      // Add interactivity after content is in DOM
+      this.setupInteractivity();
 
-        // const pie = new PieChart([...], { colors: ['green', 'red'] });
-        // document.getElementById('graph-area').appendChild(pie.render());
+      // Render graphs
+      await Promise.all([
+        this.renderXPGraph(),
+        this.renderPassFailChart()
+      ]);
 
-      });
-
-    } catch (err) {
-      wrapper.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+    } catch (error) {
+      console.error('Error rendering profile:', error);
+      this.content.innerHTML = `
+        <div class="error-message">
+          <h2>Error Loading Profile</h2>
+          <p>${error.message}</p>
+          <button id="logout-btn">Return to Login</button>
+        </div>
+      `;
     }
 
-    // Focus effect on scroll
-    const cardContainer = wrapper.querySelector('.profile-info-cards');
+    return this.container;
+  }
+
+  setupInteractivity() {
+    // Logout button handler
+    const logoutBtn = this.content.querySelector('#logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        api.clearToken();
+        window.location.hash = '#/login';
+      });
+    }
+
+    // Card scroll effect
+    const cardContainer = this.content.querySelector('.profile-info-cards');
     if (cardContainer) {
-      cardContainer.addEventListener('scroll', () => {
+      const handleScroll = () => {
         const cards = cardContainer.querySelectorAll('.profile-card');
         const midX = cardContainer.scrollLeft + cardContainer.offsetWidth / 2;
-
         cards.forEach(card => {
           const cardMid = card.offsetLeft + card.offsetWidth / 2;
           const dist = Math.abs(cardMid - midX);
           card.classList.toggle('active', dist < card.offsetWidth / 2);
         });
+      };
+
+      cardContainer.addEventListener('scroll', handleScroll);
+      handleScroll(); // Initial state
+    }
+  }
+
+  async renderXPGraph() {
+    const container = this.content.querySelector('#graph-xp');
+    if (!container) return;
+
+    try {
+      const data = profileData.getXPData();
+      console.log('Rendering XP graph with data:', data);
+      
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p>No XP data available</p>';
+        return;
+      }
+
+      const graph = new BarGraph(data, {
+        width: 500,
+        height: 300,
+        barColor: '#3498db'
       });
 
-      // Trigger initial state
-      cardContainer.dispatchEvent(new Event('scroll'));
+      container.innerHTML = '';
+      container.appendChild(graph.render());
+    } catch (error) {
+      console.error('Error rendering XP graph:', error);
+      container.innerHTML = '<p>Failed to load XP graph</p>';
     }
-
-    // Render XP graph
-    const xpDiv = wrapper.querySelector('#graph-xp');
-    this.renderXPGraph(xpDiv); // Load XP per project graph
-
-    // Load pass/fail chart
-    const passFailDiv = wrapper.querySelector('#graph-passfail');
-    this.renderPassFailChart(passFailDiv);
-
-    return this.container;
   }
 
-  async renderPassFailChart(container) {
-    const chartData = profileData.getAuditData();
-    
-    if (!chartData || chartData[0].value + chartData[1].value === 0) {
-      container.innerHTML = `<p>No audit data available.</p>`;
-      return;
-    }
-  
-    const pie = new PieChart(chartData, {
-      width: 250,
-      height: 250,
-      colors: ['#4CAF50', '#F44336'],
-    });
-  
-    container.appendChild(pie.render());
-  }
+  async renderPassFailChart() {
+    const container = this.content.querySelector('#graph-passfail');
+    if (!container) return;
 
-  async renderXPGraph(container) {
-    const graphData = profileData.getXPData();
-    
-    if (!graphData || graphData.length === 0) {
-      container.innerHTML = `<p>No XP data available.</p>`;
-      return;
-    }
-  
-    const graph = new BarGraph(graphData, {
-      width: 500,
-      height: 300,
-      barColor: '#3366cc',
-    });
-  
-    container.appendChild(graph.render());
-  }
+    try {
+      const data = profileData.getAuditData();
+      console.log('Rendering pass/fail chart with data:', data);
+      
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p>No audit data available</p>';
+        return;
+      }
 
+      const pie = new PieChart(data, {
+        width: 250,
+        height: 250,
+        colors: ['#2ecc71', '#e74c3c']
+      });
+
+      container.innerHTML = '';
+      container.appendChild(pie.render());
+    } catch (error) {
+      console.error('Error rendering audit chart:', error);
+      container.innerHTML = '<p>Failed to load audit chart</p>';
+    }
+  }
 }

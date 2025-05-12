@@ -11,11 +11,14 @@ class API {
 
   // Store JWT securely
   setToken(token) {
+    console.log('Storing token:', token);
     localStorage.setItem(this.tokenKey, token);
   }
 
   getToken() {
-    return localStorage.getItem(this.tokenKey);
+    const token = localStorage.getItem(this.tokenKey);
+    console.log('Retrieved token:', token);
+    return token;
   }
 
   clearToken() {
@@ -36,8 +39,13 @@ class API {
       throw new Error('Invalid username/email or password.');
     }
 
-    const { token } = await res.json();
-    if (!token) {
+    let token = await res.text();
+    console.log('Server response:', token);
+    
+    // Remove surrounding quotes if present and clean up
+    token = token.replace(/^"|"$/g, '').trim();
+    
+    if (!token || token === '') {
       throw new Error('Token not received from server.');
     }
 
@@ -50,12 +58,21 @@ class API {
     const token = this.getToken();
     if (!token) throw new Error('Unauthorized');
 
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    };
+    
+    console.log('GraphQL Request:', {
+      url: GRAPHQL_URL,
+      headers,
+      query,
+      variables
+    });
+
     const res = await fetch(GRAPHQL_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
       body: JSON.stringify({ query, variables }),
     });
 
@@ -65,14 +82,36 @@ class API {
       throw new Error('Session expired. Please login again.');
     }
 
-    const json = await res.json();
+    try {
+      const json = await res.json();
+      console.log('Full GraphQL Response:', json);
 
-    if (json.errors) {
-      console.error('GraphQL errors:', json.errors);
-      throw new Error('GraphQL query failed');
+      if (json.errors) {
+        console.error('GraphQL response errors:', json.errors);
+        const errorMessage = json.errors
+          .map(error => {
+            if (error.extensions?.code) {
+              return `${error.extensions.code}: ${error.message}`;
+            }
+            return error.message;
+          })
+          .join(', ');
+        throw new Error(`GraphQL query failed: ${errorMessage}`);
+      }
+
+      if (!json.data) {
+        console.error('GraphQL response has no data:', json);
+        throw new Error('No data returned from GraphQL API');
+      }
+
+      return json.data;
+    } catch (error) {
+      if (error.message.includes('JSON')) {
+        console.error('Invalid JSON in response:', error);
+        throw new Error('Invalid response from server');
+      }
+      throw error;
     }
-
-    return json.data;
   }
 }
 
