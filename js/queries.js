@@ -3,6 +3,7 @@ import { api } from './api.js';
 
 // GraphQL Queries
 const QUERIES = {
+  // Separate queries that will be executed in sequence
   USER_DATA: `{
     user {
       id
@@ -16,8 +17,14 @@ const QUERIES = {
       type
       amount
       objectId
+      userId
       createdAt
       path
+      object {
+        id
+        name
+        type
+      }
     }
   }`,
 
@@ -26,11 +33,19 @@ const QUERIES = {
       id
       grade
       type
+      objectId
+      userId
       createdAt
       path
+      object {
+        id
+        name
+        type
+      }
     }
   }`,
 
+  // Keep this as a separate query for specific object lookups if needed
   OBJECT_NAMES: `query getObjects($ids: [Int!]) {
     object(where: { id: { _in: $ids }}) {
       id
@@ -67,13 +82,23 @@ class ProfileDataManager {
         this.data.user = null;
       }
       
-      // Fetch XP transactions
+      // Fetch XP transactions with nested object data
       try {
-        console.log('Fetching XP transactions...');
+        console.log('Fetching XP transactions with objects...');
         const txData = await api.queryGraphQL(QUERIES.XP_TRANSACTIONS);
         console.log('Transaction data received:', txData);
+        
         if (txData?.transaction) {
-          this.data.transactions = txData.transaction.filter(tx => tx.amount > 0);
+          // Filter to current user's transactions and positive amounts
+          this.data.transactions = txData.transaction
+            .filter(tx => tx.userId === this.data.user?.id && tx.amount > 0);
+            
+          // Extract objects from transactions
+          const objects = txData.transaction
+            .filter(tx => tx.object && tx.userId === this.data.user?.id)
+            .map(tx => tx.object);
+            
+          this.data.objects = [...objects];
         }
         console.log('Transaction data processed:', this.data.transactions);
       } catch (error) {
@@ -81,40 +106,30 @@ class ProfileDataManager {
         this.data.transactions = [];
       }
       
-      // Fetch audit results
+      // Fetch audit results with nested object data
       try {
-        console.log('Fetching audit results...');
+        console.log('Fetching audit results with objects...');
         const resultData = await api.queryGraphQL(QUERIES.AUDIT_RESULTS);
         console.log('Audit data received:', resultData);
+        
         if (resultData?.result) {
-          this.data.results = resultData.result;
+          // Filter to current user's results
+          this.data.results = resultData.result
+            .filter(result => result.userId === this.data.user?.id);
+            
+          // Extract objects from results that weren't already in our objects collection
+          const existingObjectIds = new Set(this.data.objects.map(obj => obj.id));
+          const resultObjects = resultData.result
+            .filter(result => result.object && result.userId === this.data.user?.id)
+            .map(result => result.object)
+            .filter(obj => !existingObjectIds.has(obj.id));
+            
+          this.data.objects = [...this.data.objects, ...resultObjects];
         }
         console.log('Audit data processed:', this.data.results);
       } catch (error) {
         console.error('Failed to fetch audit results:', error);
         this.data.results = [];
-      }
-      
-      // Fetch object names if we have transactions
-      if (this.data.transactions.length > 0) {
-        const objectIds = [...new Set(this.data.transactions
-          .map(tx => tx.objectId)
-          .filter(id => id)
-          .map(id => parseInt(id))
-        )];
-        
-        if (objectIds.length > 0) {
-          console.log('Fetching object names for IDs:', objectIds);
-          try {
-            const objectData = await api.queryGraphQL(QUERIES.OBJECT_NAMES, { ids: objectIds });
-            console.log('Object data received:', objectData);
-            if (objectData?.object) {
-              this.data.objects = objectData.object;
-            }
-          } catch (error) {
-            console.error('Failed to fetch object names:', error);
-          }
-        }
       }
 
       console.log('Final processed profile data:', this.data);
@@ -128,33 +143,22 @@ class ProfileDataManager {
     }
   }
 
+  // Data access methods
   getUserData() {
     return this.data.user;
   }
 
   getStats() {
-    try {
-      // Calculate total XP
-      const totalXP = this.data.transactions.reduce((sum, tx) => {
-        return sum + (Number(tx.amount) || 0);
-      }, 0);
+    if (!this.data.transactions || !this.data.results) return null;
 
-      // Calculate audit ratio from results
-      let auditRatio = 'N/A';
-      const auditResults = this.data.results.filter(r => r.type === 'audit' && r.grade !== null);
-      
-      if (auditResults.length > 0) {
-        const passCount = auditResults.filter(r => r.grade === 1).length;
-        const total = auditResults.length;
-        auditRatio = `${Math.round((passCount / total) * 100)}%`;
-      }
+    const totalXP = this.data.transactions.reduce((sum, tx) => sum + tx.amount, 0);
+    const grades = this.data.results.map(r => r.grade);
+    const passCount = grades.filter(g => g === 1).length;
+    const failCount = grades.filter(g => g === 0).length;
+    const auditRatio = failCount === 0 ? '100%' : 
+      `${Math.round((passCount / (passCount + failCount)) * 100)}%`;
 
-      console.log('Calculated stats:', { totalXP, auditRatio });
-      return { totalXP, auditRatio };
-    } catch (error) {
-      console.error('Error calculating stats:', error);
-      return { totalXP: 0, auditRatio: 'N/A' };
-    }
+    return { totalXP, auditRatio };
   }
 
   getXPData() {
