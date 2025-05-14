@@ -1,4 +1,3 @@
-// js/profile.js
 import { api } from './api.js';
 import { BarGraph, PieChart } from './graph.js';
 import { profileData } from './queries.js';

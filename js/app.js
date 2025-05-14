@@ -1,4 +1,3 @@
-// js/app.js
 import { router } from './router.js';
 
 class App {

@@ -1,5 +1,3 @@
-// js/graph.js
-
 export class Graph {
   constructor(width = 400, height = 250) {
     this.width = width;
