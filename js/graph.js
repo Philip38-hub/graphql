@@ -18,6 +18,19 @@ export class Graph {
     });
     return this.svg;
   }
+
+  // Helper to create text elements
+  createText(x, y, text, options = {}) {
+    const textElement = document.createElementNS(this.svgNS, 'text');
+    textElement.setAttribute('x', x);
+    textElement.setAttribute('y', y);
+    textElement.setAttribute('font-size', options.fontSize || '10');
+    textElement.setAttribute('text-anchor', options.anchor || 'middle');
+    textElement.setAttribute('fill', options.fill || '#333');
+    if (options.fontWeight) textElement.setAttribute('font-weight', options.fontWeight);
+    textElement.textContent = text;
+    return textElement;
+  }
 }
 
 export class BarGraph extends Graph {
@@ -64,53 +77,331 @@ export class BarGraph extends Graph {
   }
 }
 
-export class PieChart extends Graph {
+// export class PieChart extends Graph {
+//   constructor(data = [], options = {}) {
+//     super(options.width || 250, options.height || 250);
+//     this.data = data;
+//     this.colors = options.colors || ['#4CAF50', '#F44336'];
+//     this.renderPie();
+//   }
+
+//   renderPie() {
+//     const total = this.data.reduce((sum, d) => sum + d.value, 0);
+//     let startAngle = 0;
+//     const cx = this.width / 2;
+//     const cy = this.height / 2;
+//     const radius = Math.min(cx, cy) - 10;
+
+//     this.data.forEach((d, i) => {
+//       const sliceAngle = (d.value / total) * 2 * Math.PI;
+//       const x1 = cx + radius * Math.cos(startAngle);
+//       const y1 = cy + radius * Math.sin(startAngle);
+//       const x2 = cx + radius * Math.cos(startAngle + sliceAngle);
+//       const y2 = cy + radius * Math.sin(startAngle + sliceAngle);
+//       const largeArc = sliceAngle > Math.PI ? 1 : 0;
+
+//       const pathData = [
+//         `M ${cx} ${cy}`,
+//         `L ${x1} ${y1}`,
+//         `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
+//         `Z`
+//       ].join(' ');
+
+//       const path = document.createElementNS(this.svgNS, 'path');
+//       path.setAttribute('d', pathData);
+//       path.setAttribute('fill', this.colors[i % this.colors.length]);
+
+//       // Animate stroke draw
+//       path.setAttribute('stroke', '#fff');
+//       path.setAttribute('stroke-width', '1');
+//       path.setAttribute('stroke-dasharray', '1000');
+//       path.setAttribute('stroke-dashoffset', '1000');
+//       this.svg.appendChild(path);
+
+//       // Animate stroke drawing
+//       requestAnimationFrame(() => {
+//         path.setAttribute('stroke-dashoffset', '0');
+//       });
+
+//       startAngle += sliceAngle;
+//     });
+//   }
+// }
+
+export class LineGraph extends Graph {
   constructor(data = [], options = {}) {
-    super(options.width || 250, options.height || 250);
+    super(options.width || 500, options.height || 300);
     this.data = data;
-    this.colors = options.colors || ['#4CAF50', '#F44336'];
-    this.renderPie();
+    this.lineColor = options.lineColor || '#3498db';
+    this.areaColor = options.areaColor || 'rgba(52, 152, 219, 0.2)';
+    this.pointColor = options.pointColor || '#2980b9';
+    this.gridColor = options.gridColor || '#ecf0f1';
+    this.textColor = options.textColor || '#7f8c8d';
+    this.padding = options.padding || { top: 30, right: 30, bottom: 50, left: 60 };
+    this.renderLine();
   }
 
-  renderPie() {
-    const total = this.data.reduce((sum, d) => sum + d.value, 0);
-    let startAngle = 0;
-    const cx = this.width / 2;
-    const cy = this.height / 2;
-    const radius = Math.min(cx, cy) - 10;
+  renderLine() {
+    if (!this.data || this.data.length === 0) return;
+
+    // Sort data by date if it's not already sorted
+    this.data.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Calculate dimensions
+    const graphWidth = this.width - this.padding.left - this.padding.right;
+    const graphHeight = this.height - this.padding.top - this.padding.bottom;
+
+    // Find min and max values
+    const values = this.data.map(d => d.value);
+    const dates = this.data.map(d => new Date(d.date));
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const minDate = dates[0];
+    const maxDate = dates[dates.length - 1];
+
+    // Add a grid
+    this.renderGrid(graphWidth, graphHeight, minValue, maxValue, minDate, maxDate);
+
+    // Create scales
+    const xScale = (date) => {
+      const range = maxDate - minDate;
+      const percent = (date - minDate) / range;
+      return this.padding.left + percent * graphWidth;
+    };
+
+    const yScale = (value) => {
+      // Add 10% padding to the top
+      const paddedMax = maxValue * 1.1;
+      const range = paddedMax - minValue;
+      const percent = (value - minValue) / range;
+      return this.height - this.padding.bottom - percent * graphHeight;
+    };
+
+    // Create line path
+    let pathData = '';
+    let areaPathData = '';
 
     this.data.forEach((d, i) => {
-      const sliceAngle = (d.value / total) * 2 * Math.PI;
-      const x1 = cx + radius * Math.cos(startAngle);
-      const y1 = cy + radius * Math.sin(startAngle);
-      const x2 = cx + radius * Math.cos(startAngle + sliceAngle);
-      const y2 = cy + radius * Math.sin(startAngle + sliceAngle);
-      const largeArc = sliceAngle > Math.PI ? 1 : 0;
+      const x = xScale(new Date(d.date));
+      const y = yScale(d.value);
 
-      const pathData = [
-        `M ${cx} ${cy}`,
-        `L ${x1} ${y1}`,
-        `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
-        `Z`
-      ].join(' ');
+      if (i === 0) {
+        pathData += `M ${x} ${y}`;
+        areaPathData += `M ${x} ${this.height - this.padding.bottom} L ${x} ${y}`;
+      } else {
+        pathData += ` L ${x} ${y}`;
+        areaPathData += ` L ${x} ${y}`;
+      }
 
-      const path = document.createElementNS(this.svgNS, 'path');
-      path.setAttribute('d', pathData);
-      path.setAttribute('fill', this.colors[i % this.colors.length]);
+      // Add points
+      const point = document.createElementNS(this.svgNS, 'circle');
+      point.setAttribute('cx', x);
+      point.setAttribute('cy', y);
+      point.setAttribute('r', 4);
+      point.setAttribute('fill', this.pointColor);
+      point.setAttribute('stroke', '#fff');
+      point.setAttribute('stroke-width', 2);
+      point.setAttribute('opacity', 0);
 
-      // Animate stroke draw
-      path.setAttribute('stroke', '#fff');
-      path.setAttribute('stroke-width', '1');
-      path.setAttribute('stroke-dasharray', '1000');
-      path.setAttribute('stroke-dashoffset', '1000');
-      this.svg.appendChild(path);
+      // Add tooltip on hover
+      const tooltip = this.createTooltip(d, x, y);
 
-      // Animate stroke drawing
-      requestAnimationFrame(() => {
-        path.setAttribute('stroke-dashoffset', '0');
+      // Show tooltip on hover
+      point.addEventListener('mouseover', () => {
+        tooltip.setAttribute('opacity', 1);
       });
 
-      startAngle += sliceAngle;
+      point.addEventListener('mouseout', () => {
+        tooltip.setAttribute('opacity', 0);
+      });
+
+      this.svg.appendChild(point);
+
+      // Animate points
+      setTimeout(() => {
+        point.setAttribute('opacity', 1);
+      }, i * 100);
     });
+
+    // Close the area path
+    areaPathData += ` L ${xScale(new Date(this.data[this.data.length - 1].date))} ${this.height - this.padding.bottom} Z`;
+
+    // Create and add the area
+    const areaPath = document.createElementNS(this.svgNS, 'path');
+    areaPath.setAttribute('d', areaPathData);
+    areaPath.setAttribute('fill', this.areaColor);
+    areaPath.setAttribute('opacity', 0);
+    this.svg.appendChild(areaPath);
+
+    // Create and add the line
+    const path = document.createElementNS(this.svgNS, 'path');
+    path.setAttribute('d', pathData);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', this.lineColor);
+    path.setAttribute('stroke-width', 3);
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('stroke-dasharray', path.getTotalLength());
+    path.setAttribute('stroke-dashoffset', path.getTotalLength());
+    this.svg.appendChild(path);
+
+    // Animate line and area
+    requestAnimationFrame(() => {
+      path.setAttribute('stroke-dashoffset', 0);
+      areaPath.setAttribute('opacity', 1);
+    });
+  }
+
+  renderGrid(width, height, minValue, maxValue, minDate, maxDate) {
+    // Create grid container
+    const grid = document.createElementNS(this.svgNS, 'g');
+    grid.setAttribute('class', 'grid');
+
+    // Add horizontal grid lines and y-axis labels
+    const yTickCount = 5;
+    const yStep = height / (yTickCount - 1);
+    const valueRange = (maxValue * 1.1) - minValue;
+    const valueStep = valueRange / (yTickCount - 1);
+
+    for (let i = 0; i < yTickCount; i++) {
+      const y = this.padding.top + i * yStep;
+      const value = maxValue * 1.1 - i * valueStep;
+
+      // Grid line
+      const line = document.createElementNS(this.svgNS, 'line');
+      line.setAttribute('x1', this.padding.left);
+      line.setAttribute('y1', y);
+      line.setAttribute('x2', this.width - this.padding.right);
+      line.setAttribute('y2', y);
+      line.setAttribute('stroke', this.gridColor);
+      line.setAttribute('stroke-width', 1);
+      grid.appendChild(line);
+
+      // Y-axis label
+      const label = this.createText(
+        this.padding.left - 10,
+        y,
+        Math.round(value).toLocaleString(),
+        {
+          fontSize: '12',
+          anchor: 'end',
+          fill: this.textColor
+        }
+      );
+      grid.appendChild(label);
+    }
+
+    // Add vertical grid lines and x-axis labels
+    const xTickCount = Math.min(this.data.length, 6);
+    const dateRange = maxDate - minDate;
+    const dateStep = dateRange / (xTickCount - 1);
+
+    for (let i = 0; i < xTickCount; i++) {
+      const date = new Date(minDate.getTime() + i * dateStep);
+      const x = this.padding.left + (i / (xTickCount - 1)) * width;
+
+      // Grid line
+      const line = document.createElementNS(this.svgNS, 'line');
+      line.setAttribute('x1', x);
+      line.setAttribute('y1', this.padding.top);
+      line.setAttribute('x2', x);
+      line.setAttribute('y2', this.height - this.padding.bottom);
+      line.setAttribute('stroke', this.gridColor);
+      line.setAttribute('stroke-width', 1);
+      grid.appendChild(line);
+
+      // X-axis label
+      const label = this.createText(
+        x,
+        this.height - this.padding.bottom + 20,
+        this.formatDate(date),
+        {
+          fontSize: '12',
+          anchor: 'middle',
+          fill: this.textColor
+        }
+      );
+      grid.appendChild(label);
+    }
+
+    // Add axis titles
+    const yAxisTitle = this.createText(
+      20,
+      this.height / 2,
+      'XP Points',
+      {
+        fontSize: '14',
+        anchor: 'middle',
+        fill: this.textColor,
+        fontWeight: 'bold'
+      }
+    );
+    yAxisTitle.setAttribute('transform', `rotate(-90, 20, ${this.height / 2})`);
+    grid.appendChild(yAxisTitle);
+
+    const xAxisTitle = this.createText(
+      this.width / 2,
+      this.height - 10,
+      'Date',
+      {
+        fontSize: '14',
+        anchor: 'middle',
+        fill: this.textColor,
+        fontWeight: 'bold'
+      }
+    );
+    grid.appendChild(xAxisTitle);
+
+    this.svg.appendChild(grid);
+  }
+
+  createTooltip(data, x, y) {
+    const g = document.createElementNS(this.svgNS, 'g');
+    g.setAttribute('opacity', 0);
+
+    // Background rectangle
+    const rect = document.createElementNS(this.svgNS, 'rect');
+    rect.setAttribute('x', x - 70);
+    rect.setAttribute('y', y - 45);
+    rect.setAttribute('width', 140);
+    rect.setAttribute('height', 40);
+    rect.setAttribute('rx', 5);
+    rect.setAttribute('ry', 5);
+    rect.setAttribute('fill', 'rgba(0,0,0,0.7)');
+    g.appendChild(rect);
+
+    // Date text
+    const dateText = this.createText(
+      x,
+      y - 30,
+      this.formatDate(new Date(data.date)),
+      {
+        fontSize: '12',
+        fill: '#fff'
+      }
+    );
+    g.appendChild(dateText);
+
+    // Value text
+    const valueText = this.createText(
+      x,
+      y - 15,
+      `XP: ${data.value.toLocaleString()}`,
+      {
+        fontSize: '12',
+        fontWeight: 'bold',
+        fill: '#fff'
+      }
+    );
+    g.appendChild(valueText);
+
+    this.svg.appendChild(g);
+    return g;
+  }
+
+  formatDate(date) {
+    const month = date.toLocaleString('default', { month: 'short' });
+    const day = date.getDate();
+    return `${month} ${day}`;
   }
 }
