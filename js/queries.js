@@ -71,7 +71,7 @@ class ProfileDataManager {
         console.log('Fetching user data...');
         const userData = await api.queryGraphQL(QUERIES.USER_DATA);
         console.log('User data received:', userData);
-        
+
         if (!userData?.user?.[0]) {
           throw new Error('User data not found in response');
         }
@@ -81,23 +81,23 @@ class ProfileDataManager {
         console.error('Failed to fetch user data:', error);
         this.data.user = null;
       }
-      
+
       // Fetch XP transactions with nested object data
       try {
         console.log('Fetching XP transactions with objects...');
         const txData = await api.queryGraphQL(QUERIES.XP_TRANSACTIONS);
         console.log('Transaction data received:', txData);
-        
+
         if (txData?.transaction) {
           // Filter to current user's transactions and positive amounts
           this.data.transactions = txData.transaction
             .filter(tx => tx.userId === this.data.user?.id && tx.amount > 0);
-            
+
           // Extract objects from transactions
           const objects = txData.transaction
             .filter(tx => tx.object && tx.userId === this.data.user?.id)
             .map(tx => tx.object);
-            
+
           this.data.objects = [...objects];
         }
         console.log('Transaction data processed:', this.data.transactions);
@@ -105,25 +105,25 @@ class ProfileDataManager {
         console.error('Failed to fetch transactions:', error);
         this.data.transactions = [];
       }
-      
+
       // Fetch audit results with nested object data
       try {
         console.log('Fetching audit results with objects...');
         const resultData = await api.queryGraphQL(QUERIES.AUDIT_RESULTS);
         console.log('Audit data received:', resultData);
-        
+
         if (resultData?.result) {
           // Filter to current user's results
           this.data.results = resultData.result
             .filter(result => result.userId === this.data.user?.id);
-            
+
           // Extract objects from results that weren't already in our objects collection
           const existingObjectIds = new Set(this.data.objects.map(obj => obj.id));
           const resultObjects = resultData.result
             .filter(result => result.object && result.userId === this.data.user?.id)
             .map(result => result.object)
             .filter(obj => !existingObjectIds.has(obj.id));
-            
+
           this.data.objects = [...this.data.objects, ...resultObjects];
         }
         console.log('Audit data processed:', this.data.results);
@@ -155,7 +155,7 @@ class ProfileDataManager {
     const grades = this.data.results.map(r => r.grade);
     const passCount = grades.filter(g => g === 1).length;
     const failCount = grades.filter(g => g === 0).length;
-    const auditRatio = failCount === 0 ? '100%' : 
+    const auditRatio = failCount === 0 ? '100%' :
       `${Math.round((passCount / (passCount + failCount)) * 100)}%`;
 
     return { totalXP, auditRatio };
@@ -193,37 +193,99 @@ class ProfileDataManager {
     }
   }
 
-  getAuditData() {
-    try {
-      const auditResults = this.data.results.filter(r => 
-        r.type === 'audit' && r.grade !== null
-      );
-      
-      console.log('Processing audit results:', auditResults);
+  // getAuditData() {
+  //   try {
+  //     const auditResults = this.data.results.filter(r =>
+  //       r.type === 'audit' && r.grade !== null
+  //     );
 
-      if (auditResults.length === 0) {
-        return [
-          { label: 'Pass', value: 0 },
-          { label: 'Fail', value: 0 }
-        ];
+  //     console.log('Processing audit results:', auditResults);
+
+  //     if (auditResults.length === 0) {
+  //       return [
+  //         { label: 'Pass', value: 0 },
+  //         { label: 'Fail', value: 0 }
+  //       ];
+  //     }
+
+  //     const passCount = auditResults.filter(r => r.grade === 1).length;
+  //     const failCount = auditResults.filter(r => r.grade === 0).length;
+
+  //     const data = [
+  //       { label: 'Pass', value: passCount },
+  //       { label: 'Fail', value: failCount }
+  //     ];
+
+  //     console.log('Calculated audit data:', data);
+  //     return data;
+  //   } catch (error) {
+  //     console.error('Error calculating audit data:', error);
+  //     return [
+  //       { label: 'Pass', value: 0 },
+  //       { label: 'Fail', value: 0 }
+  //     ];
+  //   }
+  // }
+
+  getXPProgressData() {
+    try {
+      if (!this.data.transactions || this.data.transactions.length === 0) {
+        return [];
       }
 
-      const passCount = auditResults.filter(r => r.grade === 1).length;
-      const failCount = auditResults.filter(r => r.grade === 0).length;
+      // Sort transactions by date
+      const sortedTransactions = [...this.data.transactions]
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
-      const data = [
-        { label: 'Pass', value: passCount },
-        { label: 'Fail', value: failCount }
-      ];
+      // Group XP by date (day)
+      const xpByDate = {};
+      let cumulativeXP = 0;
 
-      console.log('Calculated audit data:', data);
-      return data;
+      sortedTransactions.forEach(tx => {
+        if (!tx.createdAt) return;
+
+        // Format date as YYYY-MM-DD to group by day
+        const date = new Date(tx.createdAt);
+        const dateKey = date.toISOString().split('T')[0];
+
+        // Add XP to the date
+        if (!xpByDate[dateKey]) {
+          xpByDate[dateKey] = {
+            date: dateKey,
+            value: 0,
+            dailyXP: 0
+          };
+        }
+
+        xpByDate[dateKey].dailyXP += Number(tx.amount);
+      });
+
+      // Convert to array and calculate cumulative XP
+      const dateKeys = Object.keys(xpByDate).sort();
+      const progressData = [];
+
+      dateKeys.forEach(dateKey => {
+        cumulativeXP += xpByDate[dateKey].dailyXP;
+        progressData.push({
+          date: dateKey,
+          value: cumulativeXP,
+          dailyXP: xpByDate[dateKey].dailyXP
+        });
+      });
+
+      // If we have too many data points, reduce them to a reasonable number
+      let finalData = progressData;
+      if (progressData.length > 20) {
+        // Sample data points to reduce the number
+        const step = Math.ceil(progressData.length / 20);
+        finalData = progressData.filter((_, index) => index % step === 0 || index === progressData.length - 1);
+      }
+
+      console.log('XP progress data for graph:', finalData);
+      return finalData;
     } catch (error) {
-      console.error('Error calculating audit data:', error);
-      return [
-        { label: 'Pass', value: 0 },
-        { label: 'Fail', value: 0 }
-      ];
+      console.error('Error processing XP progress data:', error);
+      return [];
     }
   }
 }
