@@ -1,5 +1,6 @@
+// js/profile.js
 import { api } from './api.js';
-import { BarGraph, PieChart } from './graph.js';
+import { BarGraph, LineGraph } from './graph.js';
 import { profileData } from './queries.js';
 
 export class ProfilePage {
@@ -87,8 +88,8 @@ export class ProfilePage {
               <div id="graph-xp" class="graph"></div>
             </div>
             <div class="graph-container">
-              <h3>Audit Results</h3>
-              <div id="graph-passfail" class="graph"></div>
+              <h3>XP Progress Over Time</h3>
+              <div id="graph-progress" class="graph"></div>
             </div>
           </section>
         </main>
@@ -106,7 +107,7 @@ export class ProfilePage {
       // Render graphs
       await Promise.all([
         this.renderXPGraph(),
-        this.renderPassFailChart()
+        this.renderXPProgressChart()
       ]);
 
     } catch (error) {
@@ -181,30 +182,32 @@ export class ProfilePage {
     }
   }
 
-  async renderPassFailChart() {
-    const container = this.content.querySelector('#graph-passfail');
+  async renderXPProgressChart() {
+    const container = this.content.querySelector('#graph-progress');
     if (!container) return;
 
     try {
-      const data = profileData.getAuditData();
-      console.log('Rendering pass/fail chart with data:', data);
+      const data = profileData.getXPProgressData();
+      console.log('Rendering XP progress chart with data:', data);
 
       if (!data || data.length === 0) {
-        container.innerHTML = '<p>No audit data available</p>';
+        container.innerHTML = '<p>No XP progress data available</p>';
         return;
       }
 
-      const pie = new PieChart(data, {
-        width: 250,
-        height: 250,
-        colors: ['#2ecc71', '#e74c3c']
+      const lineGraph = new LineGraph(data, {
+        width: 500,
+        height: 300,
+        lineColor: '#3498db',
+        areaColor: 'rgba(52, 152, 219, 0.2)',
+        pointColor: '#2980b9'
       });
 
       container.innerHTML = '';
-      container.appendChild(pie.render());
+      container.appendChild(lineGraph.render());
     } catch (error) {
-      console.error('Error rendering audit chart:', error);
-      container.innerHTML = '<p>Failed to load audit chart</p>';
+      console.error('Error rendering XP progress chart:', error);
+      container.innerHTML = '<p>Failed to load XP progress chart</p>';
     }
   }
 }
