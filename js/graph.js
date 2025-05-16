@@ -74,17 +74,37 @@ export class PieChart extends Graph {
 
   renderPie() {
     const total = this.data.reduce((sum, d) => sum + d.value, 0);
+    
+    // Check if we have valid data to render
+    if (total <= 0 || !this.data.length) {
+      const text = document.createElementNS(this.svgNS, 'text');
+      text.setAttribute('x', this.width / 2);
+      text.setAttribute('y', this.height / 2);
+      text.setAttribute('text-anchor', 'middle');
+      text.textContent = 'No data to display';
+      this.svg.appendChild(text);
+      return;
+    }
+    
     let startAngle = 0;
     const cx = this.width / 2;
     const cy = this.height / 2;
     const radius = Math.min(cx, cy) - 10;
 
     this.data.forEach((d, i) => {
-      const sliceAngle = (d.value / total) * 2 * Math.PI;
+      // Ensure value is a number
+      const value = Number(d.value) || 0;
+      if (value <= 0) return; // Skip zero or negative values
+      
+      const sliceAngle = (value / total) * 2 * Math.PI;
+      const endAngle = startAngle + sliceAngle;
+      
+      // Calculate points using angles
       const x1 = cx + radius * Math.cos(startAngle);
       const y1 = cy + radius * Math.sin(startAngle);
-      const x2 = cx + radius * Math.cos(startAngle + sliceAngle);
-      const y2 = cy + radius * Math.sin(startAngle + sliceAngle);
+      const x2 = cx + radius * Math.cos(endAngle);
+      const y2 = cy + radius * Math.sin(endAngle);
+      
       const largeArc = sliceAngle > Math.PI ? 1 : 0;
 
       const pathData = [
@@ -97,20 +117,32 @@ export class PieChart extends Graph {
       const path = document.createElementNS(this.svgNS, 'path');
       path.setAttribute('d', pathData);
       path.setAttribute('fill', this.colors[i % this.colors.length]);
-
-      // Animate stroke draw
       path.setAttribute('stroke', '#fff');
       path.setAttribute('stroke-width', '1');
-      path.setAttribute('stroke-dasharray', '1000');
-      path.setAttribute('stroke-dashoffset', '1000');
       this.svg.appendChild(path);
 
-      // Animate stroke drawing
-      requestAnimationFrame(() => {
-        path.setAttribute('stroke-dashoffset', '0');
-      });
+      // Add label for each slice (only if slice is large enough)
+      if (sliceAngle > 0.1) {
+        const midAngle = startAngle + sliceAngle / 2;
+        const labelRadius = radius * 0.7;
+        const labelX = cx + labelRadius * Math.cos(midAngle);
+        const labelY = cy + labelRadius * Math.sin(midAngle);
+        
+        const label = document.createElementNS(this.svgNS, 'text');
+        label.setAttribute('x', labelX);
+        label.setAttribute('y', labelY);
+        label.setAttribute('text-anchor', 'middle');
+        label.setAttribute('dominant-baseline', 'middle');
+        label.setAttribute('fill', '#fff');
+        label.setAttribute('font-size', '12');
+        label.textContent = `${d.label}`;
+        this.svg.appendChild(label);
+      }
 
-      startAngle += sliceAngle;
+      startAngle = endAngle;
     });
+    
+    // Add legend
+    this.addLegend();
   }
 }
