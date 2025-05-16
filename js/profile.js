@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { BarGraph, PieChart } from './graph.js';
+import { BarGraph, PieChart, WebChart } from './graph.js';
 import { profileData } from './queries.js';
 
 export class ProfilePage {
@@ -93,6 +93,11 @@ export class ProfilePage {
               <div id="graph-passfail" class="graph"></div>
             </div>
           </section>
+
+          <h3 class="text-2xl font-semibold text-gray-800 mb-4 mt-8">Skills Overview</h3>
+          <section class="bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-lg">
+            <div id="skills-chart" class="graph flex justify-center items-center min-h-[350px]"></div>
+          </section>
         </main>
 
         <footer class="profile-footer mt-12">
@@ -108,7 +113,8 @@ export class ProfilePage {
       // Render graphs
       await Promise.all([
         this.renderXPGraph(),
-        this.renderPassFailChart()
+        this.renderPassFailChart(),
+        this.renderSkillsChart()
       ]);
 
     } catch (error) {
@@ -211,6 +217,41 @@ export class ProfilePage {
     } catch (error) {
       console.error('Error rendering audit chart:', error);
       container.innerHTML = '<p>Failed to load audit chart</p>';
+    }
+  }
+
+  async renderSkillsChart() {
+    const container = this.content.querySelector('#skills-chart');
+    if (!container) return;
+
+    try {
+      const data = profileData.getSkillsData();
+      console.log('Rendering skills chart with data:', data);
+
+      if (!data || data.length < 3) {
+        container.innerHTML = '<p class="text-gray-500 text-center">Not enough skills data available</p>';
+        return;
+      }
+
+      // Clear container
+      container.innerHTML = '';
+      
+      const chart = new WebChart(data, {
+        width: Math.min(container.clientWidth - 40, 350),
+        height: 350,
+        maxValue: 100,
+        levels: 5,
+        color: '#6366f1', // Tailwind indigo-500
+        backgroundColor: 'rgba(99, 102, 241, 0.2)', // Tailwind indigo-500 with opacity
+        labelColor: '#4b5563' // Tailwind gray-600
+      });
+
+      container.appendChild(chart.render());
+      container.classList.add('graph-loaded');
+      
+    } catch (error) {
+      console.error('Error rendering skills chart:', error);
+      container.innerHTML = '<p class="text-gray-500 text-center">Failed to load skills chart</p>';
     }
   }
 }

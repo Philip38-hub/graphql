@@ -146,3 +146,145 @@ export class PieChart extends Graph {
     this.addLegend();
   }
 }
+
+export class WebChart extends Graph {
+  constructor(data = [], options = {}) {
+    super(options.width || 300, options.height || 300);
+    this.data = data;
+    this.maxValue = options.maxValue || 100;
+    this.levels = options.levels || 5;
+    this.color = options.color || '#3498db';
+    this.backgroundColor = options.backgroundColor || 'rgba(99, 102, 241, 0.2)';
+    this.labelColor = options.labelColor || '#4b5563';
+    this.renderWebChart();
+  }
+
+  renderWebChart() {
+    if (!this.data || this.data.length < 3) {
+      const text = document.createElementNS(this.svgNS, 'text');
+      text.setAttribute('x', this.width / 2);
+      text.setAttribute('y', this.height / 2);
+      text.setAttribute('text-anchor', 'middle');
+      text.textContent = 'Need at least 3 skills to display chart';
+      this.svg.appendChild(text);
+      return;
+    }
+
+    const centerX = this.width / 2;
+    const centerY = this.height / 2;
+    const radius = Math.min(centerX, centerY) - 30;
+    const angleStep = (Math.PI * 2) / this.data.length;
+
+    // Draw level circles and lines
+    for (let level = 1; level <= this.levels; level++) {
+      const levelRadius = (radius * level) / this.levels;
+      
+      // Draw level circle
+      const circle = document.createElementNS(this.svgNS, 'circle');
+      circle.setAttribute('cx', centerX);
+      circle.setAttribute('cy', centerY);
+      circle.setAttribute('r', levelRadius);
+      circle.setAttribute('fill', 'none');
+      circle.setAttribute('stroke', '#e2e8f0');
+      circle.setAttribute('stroke-width', '1');
+      this.svg.appendChild(circle);
+      
+      // Draw level value
+      if (level < this.levels) {
+        const levelValue = document.createElementNS(this.svgNS, 'text');
+        const levelText = Math.round((level / this.levels) * this.maxValue);
+        levelValue.setAttribute('x', centerX + 5);
+        levelValue.setAttribute('y', centerY - levelRadius + 15);
+        levelValue.setAttribute('font-size', '10');
+        levelValue.setAttribute('fill', '#94a3b8');
+        levelValue.textContent = levelText;
+        this.svg.appendChild(levelValue);
+      }
+    }
+
+    // Draw axis lines
+    this.data.forEach((item, i) => {
+      const angle = i * angleStep - Math.PI / 2; // Start from top
+      const lineX = centerX + radius * Math.cos(angle);
+      const lineY = centerY + radius * Math.sin(angle);
+      
+      const line = document.createElementNS(this.svgNS, 'line');
+      line.setAttribute('x1', centerX);
+      line.setAttribute('y1', centerY);
+      line.setAttribute('x2', lineX);
+      line.setAttribute('y2', lineY);
+      line.setAttribute('stroke', '#e2e8f0');
+      line.setAttribute('stroke-width', '1');
+      this.svg.appendChild(line);
+      
+      // Add axis label
+      const labelDistance = radius + 20;
+      const labelX = centerX + labelDistance * Math.cos(angle);
+      const labelY = centerY + labelDistance * Math.sin(angle);
+      
+      const label = document.createElementNS(this.svgNS, 'text');
+      label.setAttribute('x', labelX);
+      label.setAttribute('y', labelY);
+      label.setAttribute('font-size', '12');
+      label.setAttribute('fill', this.labelColor);
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('dominant-baseline', 'middle');
+      label.textContent = item.label;
+      this.svg.appendChild(label);
+    });
+
+    // Draw data polygon
+    const points = this.data.map((item, i) => {
+      const angle = i * angleStep - Math.PI / 2; // Start from top
+      const value = Math.min(item.value, this.maxValue);
+      const distance = (radius * value) / this.maxValue;
+      const x = centerX + distance * Math.cos(angle);
+      const y = centerY + distance * Math.sin(angle);
+      return `${x},${y}`;
+    }).join(' ');
+    
+    // Draw filled polygon
+    const polygon = document.createElementNS(this.svgNS, 'polygon');
+    polygon.setAttribute('points', points);
+    polygon.setAttribute('fill', this.backgroundColor);
+    polygon.setAttribute('stroke', this.color);
+    polygon.setAttribute('stroke-width', '2');
+    polygon.setAttribute('opacity', '0');
+    this.svg.appendChild(polygon);
+    
+    // Animate polygon appearance
+    setTimeout(() => {
+      polygon.setAttribute('opacity', '1');
+    }, 100);
+    
+    // Draw data points
+    this.data.forEach((item, i) => {
+      const angle = i * angleStep - Math.PI / 2;
+      const value = Math.min(item.value, this.maxValue);
+      const distance = (radius * value) / this.maxValue;
+      const x = centerX + distance * Math.cos(angle);
+      const y = centerY + distance * Math.sin(angle);
+      
+      const point = document.createElementNS(this.svgNS, 'circle');
+      point.setAttribute('cx', x);
+      point.setAttribute('cy', y);
+      point.setAttribute('r', '4');
+      point.setAttribute('fill', '#fff');
+      point.setAttribute('stroke', this.color);
+      point.setAttribute('stroke-width', '2');
+      
+      this.svg.appendChild(point);
+      
+      // Add value label
+      const valueLabel = document.createElementNS(this.svgNS, 'text');
+      valueLabel.setAttribute('x', x);
+      valueLabel.setAttribute('y', y - 10);
+      valueLabel.setAttribute('font-size', '10');
+      valueLabel.setAttribute('font-weight', 'bold');
+      valueLabel.setAttribute('fill', this.color);
+      valueLabel.setAttribute('text-anchor', 'middle');
+      valueLabel.textContent = item.value;
+      this.svg.appendChild(valueLabel);
+    });
+  }
+}
