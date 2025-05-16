@@ -1,3 +1,4 @@
+// js/profile.js
 import { api } from './api.js';
 import { BarGraph, PieChart, WebChart } from './graph.js';
 import { profileData } from './queries.js';
@@ -193,23 +194,25 @@ export class ProfilePage {
     }
   }
 
-  async renderPassFailChart() {
-    const container = this.content.querySelector('#graph-passfail');
+  async renderXPProgressChart() {
+    const container = this.content.querySelector('#graph-progress');
     if (!container) return;
 
     try {
-      const data = profileData.getAuditData();
-      console.log('Rendering pass/fail chart with data:', data);
+      const data = profileData.getXPProgressData();
+      console.log('Rendering XP progress chart with data:', data);
 
       if (!data || data.length === 0) {
-        container.innerHTML = '<p>No audit data available</p>';
+        container.innerHTML = '<p>No XP progress data available</p>';
         return;
       }
 
-      const pie = new PieChart(data, {
-        width: 250,
-        height: 250,
-        colors: ['#2ecc71', '#e74c3c']
+      const lineGraph = new LineGraph(data, {
+        width: 500,
+        height: 300,
+        lineColor: '#3498db',
+        areaColor: 'rgba(52, 152, 219, 0.2)',
+        pointColor: '#2980b9'
       });
 
       container.innerHTML = '';
