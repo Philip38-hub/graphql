@@ -7,12 +7,23 @@ export class ProfilePage {
   constructor() {
     // Create main container
     const container = document.createElement('div');
-    container.className = 'min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50';
+    container.className = 'min-h-screen bg-gradient-to-br from-blue-200 via-indigo-300 to-purple-300 relative overflow-hidden';
     this.container = container;
 
-    // Create content wrapper
+    // Create spotlight element
+    const spotlight = document.createElement('div');
+    spotlight.className = 'absolute pointer-events-none opacity-0 transition-opacity duration-300';
+    spotlight.style.background = 'radial-gradient(circle 200px at center, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 70%)';
+    spotlight.style.width = '400px';
+    spotlight.style.height = '400px';
+    spotlight.style.transform = 'translate(-50%, -50%)';
+    spotlight.style.zIndex = '0';
+    this.spotlight = spotlight;
+    container.appendChild(spotlight);
+
+    // Create content wrapper (above the spotlight)
     const content = document.createElement('div');
-    content.className = 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8';
+    content.className = 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10';
     this.content = content;
 
     // Add content to container
@@ -75,15 +86,15 @@ export class ProfilePage {
           <h3 class="text-2xl font-semibold text-gray-800 mb-4">Profile Statistics</h3>
           <section class="profile-stats">
             <div class="profile-info-cards grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div class="profile-card bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-lg">
+              <div class="profile-card bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-lg hover:scale-105 hover:bg-blue-50 cursor-pointer">
                 <h3 class="text-lg font-semibold text-gray-700 mb-2">User ID</h3>
                 <p class="text-2xl font-bold text-primary-600">${userData ? userData.id : 'No data'}</p>
               </div>
-              <div class="profile-card bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-lg">
+              <div class="profile-card bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-lg hover:scale-105 hover:bg-green-50 cursor-pointer">
                 <h3 class="text-lg font-semibold text-gray-700 mb-2">Total XP</h3>
                 <p class="text-2xl font-bold text-green-600">${statsData ? statsData.totalXP.toLocaleString() : 'No data'}</p>
               </div>
-              <div class="profile-card bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-lg">
+              <div class="profile-card bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-lg hover:scale-105 hover:bg-blue-50 cursor-pointer">
                 <h3 class="text-lg font-semibold text-gray-700 mb-2">Audit Pass Ratio</h3>
                 <p class="text-2xl font-bold text-blue-600">${statsData ? statsData.auditRatio : 'No data'}</p>
               </div>
@@ -92,18 +103,18 @@ export class ProfilePage {
 
           <h3 class="text-2xl font-semibold text-gray-800 mb-4">Performance Analytics</h3>
           <section class="profile-graphs grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
-            <div class="graph-container bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md">
+            <div class="graph-container bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md hover:translate-y-[-4px] hover:bg-gray-50">
               <h3 class="text-lg md:text-xl font-semibold text-gray-700 mb-2 md:mb-4">XP Distribution</h3>
               <div id="graph-xp" class="w-full h-[250px] sm:h-[300px]"></div>
             </div>
-            <div class="graph-container bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md">
+            <div class="graph-container bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md hover:translate-y-[-4px] hover:bg-gray-50">
               <h3 class="text-lg md:text-xl font-semibold text-gray-700 mb-2 md:mb-4">XP Progress</h3>
               <div id="graph-progress" class="w-full h-[250px] sm:h-[300px]"></div>
             </div>
           </section>
 
           <h3 class="text-2xl font-semibold text-gray-800 mb-4 mt-6 md:mt-8">Skills Overview</h3>
-          <section class="bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md">
+          <section class="bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md hover:translate-y-[-4px] hover:bg-gray-50">
             <div id="skills-chart" class="w-full h-[300px] sm:h-[350px] flex justify-center items-center"></div>
           </section>
         </main>
@@ -172,6 +183,36 @@ export class ProfilePage {
       cardContainer.addEventListener('scroll', handleScroll);
       handleScroll(); // Initial state
     }
+
+    // Cursor spotlight effect
+    this.setupCursorSpotlight();
+  }
+
+  setupCursorSpotlight() {
+    const container = this.container;
+    const spotlight = this.spotlight;
+    
+    // Show spotlight when mouse enters container
+    container.addEventListener('mouseenter', () => {
+      spotlight.style.opacity = '1';
+    });
+    
+    // Hide spotlight when mouse leaves container
+    container.addEventListener('mouseleave', () => {
+      spotlight.style.opacity = '0';
+    });
+    
+    // Move spotlight to follow cursor
+    container.addEventListener('mousemove', (e) => {
+      // Get position relative to container
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      // Position the spotlight at cursor
+      spotlight.style.left = `${x}px`;
+      spotlight.style.top = `${y}px`;
+    });
   }
 
   async renderXPGraph() {
