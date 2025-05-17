@@ -52,15 +52,22 @@ export class ProfilePage {
 
       // Build content
       this.content.innerHTML = `
-        <header class="profile-header bg-white rounded-xl shadow-lg p-8 mb-8">
-          <div class="profile-avatar w-32 h-32 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center mb-6">
-            <svg viewBox="0 0 24 24" fill="white" class="w-16 h-16">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-            </svg>
-          </div>
-          <div class="profile-welcome text-center">
-            <h2 class="text-3xl font-bold text-gray-800 mb-2">Welcome${userData ? `, ${userData.login}` : ''}!</h2>
-            <p class="text-gray-500">Your GraphQL Profile Dashboard</p>
+        <header class="profile-header bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 md:mb-8">
+          <div class="flex flex-col sm:flex-row items-center">
+            <div class="profile-avatar w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center mb-4 sm:mb-0 sm:mr-6">
+              <svg viewBox="0 0 24 24" fill="white" class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+              </svg>
+            </div>
+            <div class="profile-welcome text-center sm:text-left flex-1">
+              <h2 class="text-2xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-1 sm:mb-2">Welcome${userData ? `, ${userData.login}` : ''}!</h2>
+              <p class="text-sm sm:text-base text-gray-500">Your GraphQL Profile Dashboard</p>
+            </div>
+            <button id="logout-btn" class="mt-4 sm:mt-0 p-3 rounded-full bg-red-100 hover:bg-red-200 text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200" aria-label="Logout">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7">
+                <path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v9a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM6.166 5.106a.75.75 0 010 1.06 8.25 8.25 0 1011.668 0 .75.75 0 111.06-1.06c3.808 3.807 3.808 9.98 0 13.788-3.807 3.808-9.98 3.808-13.788 0-3.808-3.807-3.808-9.98 0-13.788a.75.75 0 011.06 0z" clip-rule="evenodd" />
+              </svg>
+            </button>
           </div>
         </header>
 
@@ -102,9 +109,9 @@ export class ProfilePage {
         </main>
 
         <footer class="profile-footer mt-12">
-          <button id="logout-btn" class="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200">
-            <span>Logout</span>
-          </button>
+          <p class="text-center text-gray-500 text-sm">
+            &copy; ${new Date().getFullYear()} ZONE01 GraphQL Profile Dashboard
+          </p>
         </footer>
       `;
 
