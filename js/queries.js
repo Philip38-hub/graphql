@@ -193,39 +193,27 @@ class ProfileDataManager {
     }
   }
 
-  // getAuditData() {
-  //   try {
-  //     const auditResults = this.data.results.filter(r =>
-  //       r.type === 'audit' && r.grade !== null
-  //     );
-
-  //     console.log('Processing audit results:', auditResults);
-
-  //     if (auditResults.length === 0) {
-  //       return [
-  //         { label: 'Pass', value: 0 },
-  //         { label: 'Fail', value: 0 }
-  //       ];
-  //     }
-
-  //     const passCount = auditResults.filter(r => r.grade === 1).length;
-  //     const failCount = auditResults.filter(r => r.grade === 0).length;
-
-  //     const data = [
-  //       { label: 'Pass', value: passCount },
-  //       { label: 'Fail', value: failCount }
-  //     ];
-
-  //     console.log('Calculated audit data:', data);
-  //     return data;
-  //   } catch (error) {
-  //     console.error('Error calculating audit data:', error);
-  //     return [
-  //       { label: 'Pass', value: 0 },
-  //       { label: 'Fail', value: 0 }
-  //     ];
-  //   }
-  // }
+  getSkillsData() {
+    console.log('getSkillsData called');
+    try {
+      // For demo purposes, we'll generate some sample skills data
+      console.log('Generating sample skills data');
+      const sampleSkills = [
+        { label: 'JavaScript', value: 85 },
+        { label: 'HTML/CSS', value: 90 },
+        { label: 'React', value: 75 },
+        { label: 'Node.js', value: 70 },
+        { label: 'GraphQL', value: 65 },
+        { label: 'UI/UX', value: 80 }
+      ];
+      
+      console.log('Sample skills data:', sampleSkills);
+      return sampleSkills;
+    } catch (error) {
+      console.error('Error getting skills data:', error);
+      return [];
+    }
+  }
 
   getXPProgressData() {
     try {

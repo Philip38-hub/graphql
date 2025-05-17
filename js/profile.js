@@ -1,6 +1,6 @@
 // js/profile.js
 import { api } from './api.js';
-import { BarGraph, PieChart, WebChart } from './graph.js';
+import { BarGraph, LineGraph, WebChart } from './graph.js';
 import { profileData } from './queries.js';
 
 export class ProfilePage {
@@ -90,8 +90,8 @@ export class ProfilePage {
               <div id="graph-xp" class="graph"></div>
             </div>
             <div class="graph-container bg-white rounded-xl shadow-sm p-6">
-              <h3 class="text-xl font-semibold text-gray-700 mb-4">Audit Results</h3>
-              <div id="graph-passfail" class="graph"></div>
+              <h3 class="text-xl font-semibold text-gray-700 mb-4">XP Progress</h3>
+              <div id="graph-progress" class="graph"></div>
             </div>
           </section>
 
@@ -114,7 +114,7 @@ export class ProfilePage {
       // Render graphs
       await Promise.all([
         this.renderXPGraph(),
-        this.renderPassFailChart(),
+        this.renderXPProgressChart(),
         this.renderSkillsChart()
       ]);
 
@@ -216,32 +216,51 @@ export class ProfilePage {
       });
 
       container.innerHTML = '';
-      container.appendChild(pie.render());
+      container.appendChild(lineGraph.render());  // This was using pie.render() instead of lineGraph.render()
     } catch (error) {
-      console.error('Error rendering audit chart:', error);
-      container.innerHTML = '<p>Failed to load audit chart</p>';
+      console.error('Error rendering XP progress chart:', error);  // Updated error message
+      container.innerHTML = '<p>Failed to load XP progress chart</p>';  // Updated error message
     }
   }
 
   async renderSkillsChart() {
+    console.log('Starting renderSkillsChart');
     const container = this.content.querySelector('#skills-chart');
-    if (!container) return;
+    console.log('Skills chart container:', container);
+    
+    if (!container) {
+      console.error('Skills chart container not found');
+      return;
+    }
 
     try {
+      console.log('Getting skills data');
       const data = profileData.getSkillsData();
-      console.log('Rendering skills chart with data:', data);
+      console.log('Skills data received:', data);
 
       if (!data || data.length < 3) {
+        console.warn('Not enough skills data available:', data);
         container.innerHTML = '<p class="text-gray-500 text-center">Not enough skills data available</p>';
         return;
       }
 
       // Clear container
+      console.log('Clearing container');
       container.innerHTML = '';
       
+      // Ensure container has dimensions before creating chart
+      const containerWidth = container.clientWidth || 300;
+      const containerHeight = container.clientHeight || 300;
+      console.log('Container dimensions:', { width: containerWidth, height: containerHeight });
+      
+      // Use fixed dimensions to avoid calculation issues
+      const chartWidth = 300;
+      const chartHeight = 300;
+      
+      console.log('Creating WebChart with dimensions:', { width: chartWidth, height: chartHeight });
       const chart = new WebChart(data, {
-        width: Math.min(container.clientWidth - 40, 350),
-        height: 350,
+        width: chartWidth,
+        height: chartHeight,
         maxValue: 100,
         levels: 5,
         color: '#6366f1', // Tailwind indigo-500
@@ -249,8 +268,13 @@ export class ProfilePage {
         labelColor: '#4b5563' // Tailwind gray-600
       });
 
-      container.appendChild(chart.render());
+      console.log('Rendering chart');
+      const renderedChart = chart.render();
+      console.log('Chart rendered:', renderedChart);
+      
+      container.appendChild(renderedChart);
       container.classList.add('graph-loaded');
+      console.log('Chart added to container');
       
     } catch (error) {
       console.error('Error rendering skills chart:', error);
