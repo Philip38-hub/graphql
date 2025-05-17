@@ -4,11 +4,17 @@ export class Graph {
     this.height = height;
     this.svgNS = "http://www.w3.org/2000/svg";
     this.svg = document.createElementNS(this.svgNS, 'svg');
-    this.svg.setAttribute('width', this.width);
-    this.svg.setAttribute('height', this.height);
+    this.svg.setAttribute('width', '100%');
+    this.svg.setAttribute('height', '100%');
+    this.svg.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
+    this.svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     this.svg.style.overflow = 'visible';
     this.svg.style.transition = 'opacity 0.5s ease-in';
     this.svg.style.opacity = '0';
+    this.svg.classList.add('w-full', 'h-full');
+    
+    // Create a resize observer to handle container size changes
+    this.resizeObserver = null;
   }
 
   render() {
@@ -17,6 +23,46 @@ export class Graph {
       this.svg.style.opacity = '1';
     });
     return this.svg;
+  }
+  
+  // Method to make the graph responsive to container size changes
+  makeResponsive(container) {
+    if (!container) return;
+    
+    // Clean up any existing observer
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
+    
+    // Create a new resize observer
+    this.resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          this.handleResize(width, height);
+        }
+      }
+    });
+    
+    // Start observing the container
+    this.resizeObserver.observe(container);
+  }
+  
+  // Override this method in subclasses to handle specific resize logic
+  handleResize(width, height) {
+    // Base implementation just updates the viewBox
+    const aspectRatio = this.width / this.height;
+    const containerRatio = width / height;
+    
+    if (containerRatio > aspectRatio) {
+      // Container is wider than graph
+      const newWidth = height * aspectRatio;
+      this.svg.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
+    } else {
+      // Container is taller than graph
+      const newHeight = width / aspectRatio;
+      this.svg.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
+    }
   }
 
   // Helper to create text elements

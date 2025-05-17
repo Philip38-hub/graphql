@@ -84,20 +84,20 @@ export class ProfilePage {
           </section>
 
           <h3 class="text-2xl font-semibold text-gray-800 mb-4">Performance Analytics</h3>
-          <section class="profile-graphs grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="graph-container bg-white rounded-xl shadow-sm p-6">
-              <h3 class="text-xl font-semibold text-gray-700 mb-4">XP Distribution</h3>
-              <div id="graph-xp" class="graph"></div>
+          <section class="profile-graphs grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
+            <div class="graph-container bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md">
+              <h3 class="text-lg md:text-xl font-semibold text-gray-700 mb-2 md:mb-4">XP Distribution</h3>
+              <div id="graph-xp" class="w-full h-[250px] sm:h-[300px]"></div>
             </div>
-            <div class="graph-container bg-white rounded-xl shadow-sm p-6">
-              <h3 class="text-xl font-semibold text-gray-700 mb-4">XP Progress</h3>
-              <div id="graph-progress" class="graph"></div>
+            <div class="graph-container bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md">
+              <h3 class="text-lg md:text-xl font-semibold text-gray-700 mb-2 md:mb-4">XP Progress</h3>
+              <div id="graph-progress" class="w-full h-[250px] sm:h-[300px]"></div>
             </div>
           </section>
 
-          <h3 class="text-2xl font-semibold text-gray-800 mb-4 mt-8">Skills Overview</h3>
-          <section class="bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-lg">
-            <div id="skills-chart" class="graph flex justify-center items-center min-h-[350px]"></div>
+          <h3 class="text-2xl font-semibold text-gray-800 mb-4 mt-6 md:mt-8">Skills Overview</h3>
+          <section class="bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md">
+            <div id="skills-chart" class="w-full h-[300px] sm:h-[350px] flex justify-center items-center"></div>
           </section>
         </main>
 
@@ -176,9 +176,17 @@ export class ProfilePage {
       console.log('Rendering XP graph with data:', data);
 
       if (!data || data.length === 0) {
-        container.innerHTML = '<p>No XP data available</p>';
+        container.innerHTML = '<p class="text-gray-500 text-center">No XP data available</p>';
         return;
       }
+
+      // Clear container
+      container.innerHTML = '';
+      
+      // Create a responsive wrapper div with Tailwind classes
+      const wrapper = document.createElement('div');
+      wrapper.className = 'w-full h-full min-h-[250px] sm:min-h-[300px]';
+      container.appendChild(wrapper);
 
       const graph = new BarGraph(data, {
         width: 500,
@@ -186,11 +194,14 @@ export class ProfilePage {
         barColor: '#3498db'
       });
 
-      container.innerHTML = '';
-      container.appendChild(graph.render());
+      wrapper.appendChild(graph.render());
+      
+      // Make the graph responsive
+      graph.makeResponsive(wrapper);
+      
     } catch (error) {
       console.error('Error rendering XP graph:', error);
-      container.innerHTML = '<p>Failed to load XP graph</p>';
+      container.innerHTML = '<p class="text-gray-500 text-center">Failed to load XP graph</p>';
     }
   }
 
@@ -203,9 +214,17 @@ export class ProfilePage {
       console.log('Rendering XP progress chart with data:', data);
 
       if (!data || data.length === 0) {
-        container.innerHTML = '<p>No XP progress data available</p>';
+        container.innerHTML = '<p class="text-gray-500 text-center">No XP progress data available</p>';
         return;
       }
+
+      // Clear container
+      container.innerHTML = '';
+      
+      // Create a responsive wrapper div with Tailwind classes
+      const wrapper = document.createElement('div');
+      wrapper.className = 'w-full h-full min-h-[250px] sm:min-h-[300px]';
+      container.appendChild(wrapper);
 
       const lineGraph = new LineGraph(data, {
         width: 500,
@@ -215,52 +234,41 @@ export class ProfilePage {
         pointColor: '#2980b9'
       });
 
-      container.innerHTML = '';
-      container.appendChild(lineGraph.render());  // This was using pie.render() instead of lineGraph.render()
+      wrapper.appendChild(lineGraph.render());
+      
+      // Make the graph responsive
+      lineGraph.makeResponsive(wrapper);
+      
     } catch (error) {
-      console.error('Error rendering XP progress chart:', error);  // Updated error message
-      container.innerHTML = '<p>Failed to load XP progress chart</p>';  // Updated error message
+      console.error('Error rendering XP progress chart:', error);
+      container.innerHTML = '<p class="text-gray-500 text-center">Failed to load XP progress chart</p>';
     }
   }
 
   async renderSkillsChart() {
-    console.log('Starting renderSkillsChart');
     const container = this.content.querySelector('#skills-chart');
-    console.log('Skills chart container:', container);
-    
-    if (!container) {
-      console.error('Skills chart container not found');
-      return;
-    }
+    if (!container) return;
 
     try {
-      console.log('Getting skills data');
       const data = profileData.getSkillsData();
-      console.log('Skills data received:', data);
+      console.log('Rendering skills chart with data:', data);
 
       if (!data || data.length < 3) {
-        console.warn('Not enough skills data available:', data);
         container.innerHTML = '<p class="text-gray-500 text-center">Not enough skills data available</p>';
         return;
       }
 
       // Clear container
-      console.log('Clearing container');
       container.innerHTML = '';
       
-      // Ensure container has dimensions before creating chart
-      const containerWidth = container.clientWidth || 300;
-      const containerHeight = container.clientHeight || 300;
-      console.log('Container dimensions:', { width: containerWidth, height: containerHeight });
-      
-      // Use fixed dimensions to avoid calculation issues
-      const chartWidth = 300;
-      const chartHeight = 300;
-      
-      console.log('Creating WebChart with dimensions:', { width: chartWidth, height: chartHeight });
+      // Create a responsive wrapper div with Tailwind classes
+      const wrapper = document.createElement('div');
+      wrapper.className = 'w-full h-full min-h-[300px] sm:min-h-[350px] flex justify-center items-center';
+      container.appendChild(wrapper);
+
       const chart = new WebChart(data, {
-        width: chartWidth,
-        height: chartHeight,
+        width: 350,
+        height: 350,
         maxValue: 100,
         levels: 5,
         color: '#6366f1', // Tailwind indigo-500
@@ -268,13 +276,12 @@ export class ProfilePage {
         labelColor: '#4b5563' // Tailwind gray-600
       });
 
-      console.log('Rendering chart');
-      const renderedChart = chart.render();
-      console.log('Chart rendered:', renderedChart);
+      wrapper.appendChild(chart.render());
       
-      container.appendChild(renderedChart);
+      // Make the chart responsive
+      chart.makeResponsive(wrapper);
+      
       container.classList.add('graph-loaded');
-      console.log('Chart added to container');
       
     } catch (error) {
       console.error('Error rendering skills chart:', error);
