@@ -9,19 +9,35 @@ export class Graph {
     this.svg.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
     this.svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     this.svg.style.overflow = 'visible';
-    this.svg.style.transition = 'opacity 0.5s ease-in';
+    this.svg.style.transition = 'opacity 0.5s ease-in, transform 0.5s ease-out';
     this.svg.style.opacity = '0';
     this.svg.classList.add('w-full', 'h-full');
+    
+    // Add event listeners for interactivity
+    this.svg.addEventListener('mouseenter', () => {
+      this.svg.style.transform = 'scale(1.05)';
+    });
+    
+    this.svg.addEventListener('mouseleave', () => {
+      this.svg.style.transform = 'scale(1)';
+    });
     
     // Create a resize observer to handle container size changes
     this.resizeObserver = null;
   }
 
   render() {
-    requestAnimationFrame(() => {
-      this.svg.classList.add('loaded');
+    // Use a more robust animation approach
+    const animate = () => {
       this.svg.style.opacity = '1';
-    });
+      this.svg.style.transform = 'scale(1)';
+    };
+    
+    // Add a small delay before animation starts
+    setTimeout(() => {
+      requestAnimationFrame(animate);
+    }, 100);
+    
     return this.svg;
   }
   
@@ -103,12 +119,41 @@ export class BarGraph extends Graph {
       rect.setAttribute('width', barWidth - 20);
       rect.setAttribute('height', 0); // grow from 0
       rect.setAttribute('fill', this.barColor);
+      rect.style.transition = 'transform 0.3s ease-out';
+      
+      // Add tooltip
+      const tooltip = document.createElementNS(this.svgNS, 'text');
+      tooltip.setAttribute('x', x + (barWidth - 20) / 2);
+      tooltip.setAttribute('y', y - 10);
+      tooltip.setAttribute('font-size', '12');
+      tooltip.setAttribute('text-anchor', 'middle');
+      tooltip.setAttribute('fill', '#fff');
+      tooltip.textContent = `${d.value}`;
+      tooltip.style.opacity = '0';
+      this.svg.appendChild(tooltip);
+      
+      // Add hover effects
+      rect.addEventListener('mouseenter', () => {
+        rect.style.transform = 'scale(1.05)';
+        tooltip.style.opacity = '1';
+      });
+      
+      rect.addEventListener('mouseleave', () => {
+        rect.style.transform = 'scale(1)';
+        tooltip.style.opacity = '0';
+      });
+      
       this.svg.appendChild(rect);
 
       // Animate height
       requestAnimationFrame(() => {
         rect.setAttribute('height', finalHeight);
         rect.setAttribute('y', y);
+        
+        // Animate tooltip position
+        requestAnimationFrame(() => {
+          tooltip.setAttribute('y', y - 10 - finalHeight);
+        });
       });
 
       // Label
@@ -122,57 +167,6 @@ export class BarGraph extends Graph {
     });
   }
 }
-
-// export class PieChart extends Graph {
-//   constructor(data = [], options = {}) {
-//     super(options.width || 250, options.height || 250);
-//     this.data = data;
-//     this.colors = options.colors || ['#4CAF50', '#F44336'];
-//     this.renderPie();
-//   }
-
-//   renderPie() {
-//     const total = this.data.reduce((sum, d) => sum + d.value, 0);
-//     let startAngle = 0;
-//     const cx = this.width / 2;
-//     const cy = this.height / 2;
-//     const radius = Math.min(cx, cy) - 10;
-
-//     this.data.forEach((d, i) => {
-//       const sliceAngle = (d.value / total) * 2 * Math.PI;
-//       const x1 = cx + radius * Math.cos(startAngle);
-//       const y1 = cy + radius * Math.sin(startAngle);
-//       const x2 = cx + radius * Math.cos(startAngle + sliceAngle);
-//       const y2 = cy + radius * Math.sin(startAngle + sliceAngle);
-//       const largeArc = sliceAngle > Math.PI ? 1 : 0;
-
-//       const pathData = [
-//         `M ${cx} ${cy}`,
-//         `L ${x1} ${y1}`,
-//         `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
-//         `Z`
-//       ].join(' ');
-
-//       const path = document.createElementNS(this.svgNS, 'path');
-//       path.setAttribute('d', pathData);
-//       path.setAttribute('fill', this.colors[i % this.colors.length]);
-
-//       // Animate stroke draw
-//       path.setAttribute('stroke', '#fff');
-//       path.setAttribute('stroke-width', '1');
-//       path.setAttribute('stroke-dasharray', '1000');
-//       path.setAttribute('stroke-dashoffset', '1000');
-//       this.svg.appendChild(path);
-
-//       // Animate stroke drawing
-//       requestAnimationFrame(() => {
-//         path.setAttribute('stroke-dashoffset', '0');
-//       });
-
-//       startAngle += sliceAngle;
-//     });
-//   }
-// }
 
 export class LineGraph extends Graph {
   constructor(data = [], options = {}) {
