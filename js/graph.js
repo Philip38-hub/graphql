@@ -7,20 +7,8 @@ export class Graph {
     this.svg.setAttribute('width', '100%');
     this.svg.setAttribute('height', '100%');
     this.svg.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
-    this.svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    this.svg.setAttribute('preserveAspectRatio', 'xMinYMid meet');
     this.svg.style.overflow = 'visible';
-    this.svg.style.transition = 'opacity 0.5s ease-in, transform 0.5s ease-out';
-    this.svg.style.opacity = '0';
-    this.svg.classList.add('w-full', 'h-full');
-    
-    // Add event listeners for interactivity
-    this.svg.addEventListener('mouseenter', () => {
-      this.svg.style.transform = 'scale(1.05)';
-    });
-    
-    this.svg.addEventListener('mouseleave', () => {
-      this.svg.style.transform = 'scale(1)';
-    });
     
     // Create a resize observer to handle container size changes
     this.resizeObserver = null;
@@ -106,57 +94,42 @@ export class BarGraph extends Graph {
 
   renderBars() {
     const max = Math.max(...this.data.map(d => d.value));
-    const barWidth = this.width / this.data.length;
+    const barWidth = 30; // Reduced width
+    const spacing = 20; // Reduced spacing
+    const totalWidth = (barWidth + spacing) * this.data.length;
+    
+    // Update SVG width
+    this.width = totalWidth;
+    this.svg.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
+    
+    // Clear previous content
+    this.svg.innerHTML = '';
 
     this.data.forEach((d, i) => {
-      const finalHeight = (d.value / max) * (this.height - 40);
-      const x = i * barWidth + 10;
-      const y = this.height - finalHeight - 20;
+      const barHeight = (d.value / max) * (this.height - 50);
+      const x = i * (barWidth + spacing);
+      const y = this.height - barHeight - 30;
 
+      // Create bar
       const rect = document.createElementNS(this.svgNS, 'rect');
       rect.setAttribute('x', x);
-      rect.setAttribute('y', this.height - 20); // start at base
-      rect.setAttribute('width', barWidth - 20);
-      rect.setAttribute('height', 0); // grow from 0
+      rect.setAttribute('y', y);
+      rect.setAttribute('width', barWidth);
+      rect.setAttribute('height', barHeight);
       rect.setAttribute('fill', this.barColor);
-      rect.style.transition = 'transform 0.3s ease-out';
-      
-      // Add tooltip
-      const tooltip = document.createElementNS(this.svgNS, 'text');
-      tooltip.setAttribute('x', x + (barWidth - 20) / 2);
-      tooltip.setAttribute('y', y - 10);
-      tooltip.setAttribute('font-size', '12');
-      tooltip.setAttribute('text-anchor', 'middle');
-      tooltip.setAttribute('fill', '#fff');
-      tooltip.textContent = `${d.value}`;
-      tooltip.style.opacity = '0';
-      this.svg.appendChild(tooltip);
-      
-      // Add hover effects
-      rect.addEventListener('mouseenter', () => {
-        rect.style.transform = 'scale(1.05)';
-        tooltip.style.opacity = '1';
-      });
-      
-      rect.addEventListener('mouseleave', () => {
-        rect.style.transform = 'scale(1)';
-        tooltip.style.opacity = '0';
-      });
-      
       this.svg.appendChild(rect);
 
-      // Animate height
-      requestAnimationFrame(() => {
-        rect.setAttribute('height', finalHeight);
-        rect.setAttribute('y', y);
-        
-        // Animate tooltip position
-        requestAnimationFrame(() => {
-          tooltip.setAttribute('y', y - 10 - finalHeight);
-        });
-      });
+      // Add value label
+      const value = document.createElementNS(this.svgNS, 'text');
+      value.setAttribute('x', x + (barWidth - 20) / 2);
+      value.setAttribute('y', y - 5);
+      value.setAttribute('text-anchor', 'middle');
+      value.setAttribute('font-size', '10');
+      value.setAttribute('fill', '#666');
+      value.textContent = d.value.toLocaleString();
+      this.svg.appendChild(value);
 
-      // Label
+      // Add bar label
       const label = document.createElementNS(this.svgNS, 'text');
       label.setAttribute('x', x + (barWidth - 20) / 2);
       label.setAttribute('y', this.height - 5);

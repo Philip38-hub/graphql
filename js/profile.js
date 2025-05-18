@@ -103,9 +103,11 @@ export class ProfilePage {
 
           <h3 class="text-2xl font-semibold text-gray-800 mb-4">Performance Analytics</h3>
           <section class="profile-graphs grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
-            <div class="graph-container bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md hover:translate-y-[-4px] hover:bg-gray-50">
+            <div class="graph-container bg-white rounded-xl shadow-sm p-4 md:p-6">
               <h3 class="text-lg md:text-xl font-semibold text-gray-700 mb-2 md:mb-4">XP Distribution</h3>
-              <div id="graph-xp" class="w-full h-[250px] sm:h-[300px]"></div>
+              <div id="graph-xp" style="width: 100%; height: 300px; overflow-x: auto; overflow-y: hidden;">
+                <div style="min-width: max-content; height: 100%;"></div>
+              </div>
             </div>
             <div class="graph-container bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md hover:translate-y-[-4px] hover:bg-gray-50">
               <h3 class="text-lg md:text-xl font-semibold text-gray-700 mb-2 md:mb-4">XP Progress</h3>
@@ -228,24 +230,24 @@ export class ProfilePage {
         return;
       }
 
-      // Clear container
-      container.innerHTML = '';
-      
-      // Create a responsive wrapper div with Tailwind classes
-      const wrapper = document.createElement('div');
-      wrapper.className = 'w-full h-full min-h-[250px] sm:min-h-[300px]';
-      container.appendChild(wrapper);
+      // Get the inner container
+      const innerContainer = container.querySelector('div');
 
+      // Set fixed width for each bar and calculate total width
+      const barWidth = 100; // pixels
+      const spacing = 20; // pixels
+      const totalWidth = Math.max(container.clientWidth, data.length * (barWidth + spacing));
+      
+      // Create and render graph
       const graph = new BarGraph(data, {
-        width: 500,
+        width: totalWidth,
         height: 300,
         barColor: '#3498db'
       });
 
-      wrapper.appendChild(graph.render());
-      
-      // Make the graph responsive
-      graph.makeResponsive(wrapper);
+      const svg = graph.render();
+      svg.style.display = 'block';
+      innerContainer.appendChild(svg);
       
     } catch (error) {
       console.error('Error rendering XP graph:', error);

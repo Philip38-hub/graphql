@@ -202,14 +202,13 @@ class ProfileDataManager {
         }
       });
 
-      // Convert to array format for graph
+      // Convert to array format and sort by XP amount
       const data = Object.entries(xpByProject)
         .map(([project, xp]) => ({
           label: project,
           value: xp
         }))
-        // .sort((a, b) => b.value - a.value)
-        .slice(0, 10); // Show top 10 projects
+        .sort((a, b) => b.value - a.value);
 
       console.log('XP data for graph:', data);
       return data;
