@@ -456,7 +456,10 @@ export class WebChart extends Graph {
   constructor(data = [], options = {}) {
     console.log('WebChart constructor called with data:', data);
     super(options.width || 300, options.height || 300);
-    this.data = data;
+    
+    // Ensure data is always an array
+    this.data = Array.isArray(data) ? data : [];
+    
     this.maxValue = options.maxValue || 100;
     this.levels = options.levels || 5;
     this.color = options.color || '#3498db';
@@ -474,12 +477,13 @@ export class WebChart extends Graph {
     console.log('renderWebChart called with data:', this.data);
     console.log('Chart dimensions:', { width: this.width, height: this.height });
     
-    if (!this.data || this.data.length < 3) {
-      console.warn('Not enough data points for web chart');
+    if (!this.data || !Array.isArray(this.data) || this.data.length < 3) {
+      console.warn('Not enough data points for web chart:', this.data);
       const text = document.createElementNS(this.svgNS, 'text');
       text.setAttribute('x', this.width / 2);
       text.setAttribute('y', this.height / 2);
       text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('fill', '#4b5563');
       text.textContent = 'Need at least 3 skills to display chart';
       this.svg.appendChild(text);
       return;

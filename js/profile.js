@@ -298,11 +298,27 @@ export class ProfilePage {
     if (!container) return;
 
     try {
-      const data = profileData.getSkillsData();
+      // Get skills data - this might be a promise if fetchSkillsData is called
+      let data = profileData.getSkillsData();
+      
+      // If it's a promise, await it
+      if (data instanceof Promise) {
+        data = await data;
+      }
+      
       console.log('Rendering skills chart with data:', data);
 
-      if (!data || data.length < 3) {
-        container.innerHTML = '<p class="text-gray-500 text-center">Not enough skills data available</p>';
+      // Ensure we have valid data
+      if (!data || !Array.isArray(data)) {
+        console.error('Skills data is not an array:', data);
+        container.innerHTML = '<p class="text-gray-500 text-center">Invalid skills data format</p>';
+        return;
+      }
+      
+      // If we have less than 3 skills, show a message
+      if (data.length < 3) {
+        console.warn('Not enough skills data points:', data.length);
+        container.innerHTML = '<p class="text-gray-500 text-center">Need at least 3 skills to display chart</p>';
         return;
       }
 
@@ -314,6 +330,7 @@ export class ProfilePage {
       wrapper.className = 'w-full h-full min-h-[300px] sm:min-h-[350px] flex justify-center items-center';
       container.appendChild(wrapper);
 
+      // Create the chart with the validated data
       const chart = new WebChart(data, {
         width: 350,
         height: 350,
@@ -333,7 +350,7 @@ export class ProfilePage {
       
     } catch (error) {
       console.error('Error rendering skills chart:', error);
-      container.innerHTML = '<p class="text-gray-500 text-center">Failed to load skills chart</p>';
+      container.innerHTML = '<p class="text-gray-500 text-center">Failed to load skills chart: ${error.message}</p>';
     }
   }
 }

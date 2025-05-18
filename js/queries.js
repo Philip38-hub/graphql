@@ -45,6 +45,31 @@ const QUERIES = {
     }
   }`,
 
+  SKILLS_DATA: `query getSkillsData($userId: Int!) {
+    # Normal query - get progress data
+    progress {
+      id
+      grade
+      path
+      createdAt
+      
+      # Nested query - get related object data
+      object {
+        id
+        name
+        type
+      }
+    }
+    
+    # Query with arguments - get user's specific results
+    result(where: {userId: {_eq: $userId}}) {
+      id
+      grade
+      path
+      type
+    }
+  }`,
+
   // Keep this as a separate query for specific object lookups if needed
   OBJECT_NAMES: `query getObjects($ids: [Int!]) {
     object(where: { id: { _in: $ids }}) {
@@ -60,7 +85,8 @@ class ProfileDataManager {
       user: null,
       transactions: [],
       results: [],
-      objects: []
+      objects: [],
+      progress: []
     };
   }
 
@@ -182,7 +208,7 @@ class ProfileDataManager {
           label: project,
           value: xp
         }))
-        .sort((a, b) => b.value - a.value)
+        // .sort((a, b) => b.value - a.value)
         .slice(0, 10); // Show top 10 projects
 
       console.log('XP data for graph:', data);
@@ -193,26 +219,191 @@ class ProfileDataManager {
     }
   }
 
-  getSkillsData() {
+  async getSkillsData() {
     console.log('getSkillsData called');
     try {
-      // For demo purposes, we'll generate some sample skills data
-      console.log('Generating sample skills data');
-      const sampleSkills = [
-        { label: 'JavaScript', value: 85 },
-        { label: 'HTML/CSS', value: 90 },
-        { label: 'React', value: 75 },
-        { label: 'Node.js', value: 70 },
-        { label: 'GraphQL', value: 65 },
-        { label: 'UI/UX', value: 80 }
-      ];
-      
-      console.log('Sample skills data:', sampleSkills);
-      return sampleSkills;
+      if (!this.data.user) {
+        console.warn('No user data available for skills calculation');
+        return [];
+      }
+
+      // First check if we have progress data
+      if (this.data.progress && this.data.progress.length > 0) {
+        console.log('Using existing progress data for skills');
+        return this.calculateSkillsFromProgress();
+      }
+
+      // If we don't have progress data yet, fetch it
+      console.log('No progress data yet, fetching it now');
+      return await this.fetchSkillsData();
     } catch (error) {
       console.error('Error getting skills data:', error);
       return [];
     }
+  }
+
+  async fetchSkillsData() {
+    try {
+      console.log('Fetching skills data...');
+      const userId = this.data.user.id;
+      
+      // Fetch skills data using our new query with the user's ID as a variable
+      const skillsData = await api.queryGraphQL(QUERIES.SKILLS_DATA, { userId });
+      console.log('Skills data received:', skillsData);
+      
+      // Store progress data for future use
+      if (skillsData?.progress) {
+        this.data.progress = skillsData.progress;
+      }
+      
+      // Store additional results if not already present
+      if (skillsData?.result && (!this.data.results || this.data.results.length === 0)) {
+        this.data.results = skillsData.result;
+      }
+      
+      return this.calculateSkillsFromProgress();
+    } catch (error) {
+      console.error('Failed to fetch skills data:', error);
+      // Fall back to sample data if we can't get real data
+      return this.getSampleSkillsData();
+    }
+  }
+
+  calculateSkillsFromProgress() {
+    if (!this.data.progress || this.data.progress.length === 0) {
+      console.log('No progress data available, using sample data');
+      // return this.getSampleSkillsData();
+    }
+    
+    console.log('Calculating skills from progress data');
+    
+    // Define core skill categories
+    const skillsMap = {
+      'Programming': { count: 0, totalGrade: 0, completed: 0 },
+      'Frontend': { count: 0, totalGrade: 0, completed: 0 },
+      'Backend': { count: 0, totalGrade: 0, completed: 0 },
+      'UX/UI': { count: 0, totalGrade: 0, completed: 0 },
+      'Git': { count: 0, totalGrade: 0, completed: 0 },
+      'Go': { count: 0, totalGrade: 0, completed: 0 },
+      'JavaScript': { count: 0, totalGrade: 0, completed: 0 }
+    };
+    
+    // Define keywords that map to each core skill
+    const skillKeywords = {
+      'Programming': ['algorithm', 'data-structure', 'logic', 'programming', 'coding', 'piscine'],
+      'Frontend': ['html', 'css', 'react', 'vue', 'angular', 'dom', 'frontend', 'ui', 'responsive'],
+      'Backend': ['api', 'server', 'database', 'sql', 'nosql', 'backend', 'rest', 'graphql', 'node'],
+      'UX/UI': ['design', 'ux', 'ui', 'user-experience', 'user-interface', 'accessibility'],
+      'Git': ['git', 'github', 'version-control', 'repository'],
+      'Go': ['go', 'golang'],
+      'JavaScript': ['js', 'javascript', 'typescript', 'es6']
+    };
+    
+    // Process progress data to categorize into core skills
+    this.data.progress.forEach(item => {
+      if (!item.path) return;
+      
+      // Extract path components
+      const pathLower = item.path.toLowerCase();
+      const pathParts = pathLower.split('/').filter(Boolean);
+      
+      // Check which core skills this item belongs to
+      let matchedSkills = [];
+      
+      // Check path against skill keywords
+      for (const [skill, keywords] of Object.entries(skillKeywords)) {
+        if (keywords.some(keyword => pathLower.includes(keyword))) {
+          matchedSkills.push(skill);
+        }
+      }
+      
+      // If no specific matches, categorize as general Programming
+      if (matchedSkills.length === 0) {
+        matchedSkills.push('Programming');
+      }
+      
+      // Update stats for each matched skill
+      matchedSkills.forEach(skill => {
+        skillsMap[skill].count++;
+        if (item.grade !== null && item.grade !== undefined) {
+          skillsMap[skill].totalGrade += item.grade;
+          skillsMap[skill].completed++;
+        }
+      });
+    });
+    
+    // Calculate skill proficiency (as a percentage)
+    const skills = Object.entries(skillsMap)
+      .filter(([_, stats]) => stats.count > 0)
+      .map(([skill, stats]) => {
+        // Calculate proficiency based on grades and completion
+        const completionRate = stats.completed / stats.count;
+        const avgGrade = stats.completed > 0 ? stats.totalGrade / stats.completed : 0;
+        
+        // Combine factors for overall skill value (0-100)
+        const value = Math.round((avgGrade * 0.7 + completionRate * 0.3) * 100);
+        
+        return {
+          label: skill,
+          value: Math.min(value, 100) // Cap at 100
+        };
+      })
+      .sort((a, b) => b.value - a.value);
+    
+    console.log('Calculated core skills:', skills);
+    
+    // If we don't have enough skills with data, add placeholder skills
+    if (skills.length < 3) {
+      console.log('Not enough skills data, adding placeholders');
+      const coreSkills = ['Programming', 'Frontend', 'Backend', 'UX/UI', 'Git', 'Go', 'JavaScript'];
+      
+      // Add missing core skills with default values
+      coreSkills.forEach(skill => {
+        if (!skills.some(s => s.label === skill)) {
+          skills.push({
+            label: skill,
+            value: 50 // Default middle value
+          });
+        }
+      });
+      
+      // Take top 6 skills
+      return skills.slice(0, 6);
+    }
+    
+    // Return top 6 skills
+    return skills.slice(0, 6);
+  }
+
+  formatSkillName(name) {
+    // Format common skill names
+    const skillNameMap = {
+      'js': 'JavaScript',
+      'javascript': 'JavaScript',
+      'go': 'Go',
+      'golang': 'Go',
+      'react': 'React',
+      'html': 'HTML/CSS',
+      'css': 'HTML/CSS',
+      'node': 'Node.js',
+      'graphql': 'GraphQL',
+      'sql': 'SQL',
+      'python': 'Python',
+      'django': 'Django',
+      'vue': 'Vue.js',
+      'angular': 'Angular'
+    };
+    
+    // Check for direct mapping
+    if (skillNameMap[name.toLowerCase()]) {
+      return skillNameMap[name.toLowerCase()];
+    }
+    
+    // Otherwise capitalize first letter of each word
+    return name
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
 
   getXPProgressData() {
