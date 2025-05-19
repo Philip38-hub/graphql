@@ -54,8 +54,6 @@ The application uses GraphQL queries to fetch specific data points and display t
     *   `profile.js`: Manages the profile page and renders the UI.
     *   `queries.js`: Defines GraphQL queries used to fetch data.
     *   `router.js`: Handles client-side routing.
-*   `assets/`: Contains CSS and other assets.
-    *   `style.css`: Contains custom CSS styles.
 *   `tailwind.config.js`: Configuration file for Tailwind CSS.
 *   `package.json`: Lists project dependencies and scripts.
 *   `README.md`: Project documentation.
