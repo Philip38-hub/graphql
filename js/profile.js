@@ -83,27 +83,42 @@ export class ProfilePage {
         </header>
 
         <main class="profile-main space-y-8">
-          <h3 class="text-2xl font-semibold text-gray-800 mb-4">Profile Statistics</h3>
           <section class="profile-stats">
-            <div class="profile-info-cards grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div class="profile-card bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-lg hover:scale-105 hover:bg-blue-50 cursor-pointer">
-                <h3 class="text-lg font-semibold text-gray-700 mb-2">User ID</h3>
-                <p class="text-2xl font-bold text-primary-600">${userData ? userData.id : 'No data'}</p>
+            <!-- Two-column layout for desktop, stacked for mobile -->
+            <div class="flex flex-col md:flex-row gap-6">
+              <!-- Left column: Skills Chart (reduce width from 2/3 to 3/5) -->
+              <div class="md:w-3/5 order-2 md:order-1 flex flex-col">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-4">Skills Overview</h3>
+                <div class="flex-grow flex items-center justify-center bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md hover:translate-y-[-4px] hover:bg-gray-50">
+                  <!-- Skills chart container with full height -->
+                  <div id="skills-chart"></div>
+                </div>
               </div>
-              <div class="profile-card bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-lg hover:scale-105 hover:bg-green-50 cursor-pointer">
-                <h3 class="text-lg font-semibold text-gray-700 mb-2">Total XP</h3>
-                <p class="text-2xl font-bold text-green-600">${statsData ? statsData.totalXP.toLocaleString() : 'No data'}</p>
-              </div>
-              <div class="profile-card bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-lg hover:scale-105 hover:bg-blue-50 cursor-pointer">
-                <h3 class="text-lg font-semibold text-gray-700 mb-2">Audit Pass Ratio</h3>
-                <p class="text-2xl font-bold text-blue-600">${statsData ? statsData.auditRatio : 'No data'}</p>
+
+              <!-- Right column: Stacked Profile Stats (increase width from 1/3 to 2/5) -->
+              <div class="md:w-2/5 order-1 md:order-2">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-4">Profile Statistics</h3>
+                <div class="profile-info-cards flex flex-col gap-4">
+                  <div class="profile-card bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-lg hover:scale-105 hover:bg-blue-50 cursor-pointer">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">User ID</h3>
+                    <p class="text-2xl font-bold text-primary-600">${userData ? userData.id : 'No data'}</p>
+                  </div>
+                  <div class="profile-card bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-lg hover:scale-105 hover:bg-green-50 cursor-pointer">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Total XP</h3>
+                    <p class="text-2xl font-bold text-green-600">${statsData ? statsData.totalXP.toLocaleString() : 'No data'}</p>
+                  </div>
+                  <div class="profile-card bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-lg hover:scale-105 hover:bg-blue-50 cursor-pointer">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Audit Pass Ratio</h3>
+                    <p class="text-2xl font-bold text-blue-600">${statsData ? statsData.auditRatio : 'No data'}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
 
           <h3 class="text-2xl font-semibold text-gray-800 mb-4">Performance Analytics</h3>
           <section class="profile-graphs grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
-            <div class="graph-container bg-white rounded-xl shadow-sm p-4 md:p-6">
+            <div class="graph-container bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md hover:translate-y-[-4px] hover:bg-gray-50">
               <h3 class="text-lg md:text-xl font-semibold text-gray-700 mb-2 md:mb-4">XP Distribution</h3>
               <div id="graph-xp" style="width: 100%; height: 300px; overflow-x: auto; overflow-y: hidden;">
                 <div style="min-width: max-content; height: 100%;"></div>
@@ -113,11 +128,6 @@ export class ProfilePage {
               <h3 class="text-lg md:text-xl font-semibold text-gray-700 mb-2 md:mb-4">XP Progress</h3>
               <div id="graph-progress" class="w-full h-[250px] sm:h-[300px]"></div>
             </div>
-          </section>
-
-          <h3 class="text-2xl font-semibold text-gray-800 mb-4 mt-6 md:mt-8">Skills Overview</h3>
-          <section class="bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md hover:translate-y-[-4px] hover:bg-gray-50">
-            <div id="skills-chart" class="w-full h-[300px] sm:h-[350px] flex justify-center items-center"></div>
           </section>
         </main>
 
@@ -169,16 +179,16 @@ export class ProfilePage {
       });
     }
 
-    // Card scroll effect
+    // Card scroll/scroll effect for vertical layout
     const cardContainer = this.content.querySelector('.profile-info-cards');
     if (cardContainer) {
       const handleScroll = () => {
         const cards = cardContainer.querySelectorAll('.profile-card');
-        const midX = cardContainer.scrollLeft + cardContainer.offsetWidth / 2;
+        const midY = cardContainer.scrollTop + cardContainer.offsetHeight / 2;
         cards.forEach(card => {
-          const cardMid = card.offsetLeft + card.offsetWidth / 2;
-          const dist = Math.abs(cardMid - midX);
-          card.classList.toggle('active', dist < card.offsetWidth / 2);
+          const cardMid = card.offsetTop + card.offsetHeight / 2;
+          const dist = Math.abs(cardMid - midY);
+          card.classList.toggle('active', dist < card.offsetHeight / 2);
         });
       };
 
@@ -188,29 +198,32 @@ export class ProfilePage {
 
     // Cursor spotlight effect
     this.setupCursorSpotlight();
+
+    // Ensure skills chart height matches profile stats height
+    this.matchSkillsChartHeight();
   }
 
   setupCursorSpotlight() {
     const container = this.container;
     const spotlight = this.spotlight;
-    
+
     // Show spotlight when mouse enters container
     container.addEventListener('mouseenter', () => {
       spotlight.style.opacity = '1';
     });
-    
+
     // Hide spotlight when mouse leaves container
     container.addEventListener('mouseleave', () => {
       spotlight.style.opacity = '0';
     });
-    
+
     // Move spotlight to follow cursor
     container.addEventListener('mousemove', (e) => {
       // Get position relative to container
       const rect = container.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      
+
       // Position the spotlight at cursor
       spotlight.style.left = `${x}px`;
       spotlight.style.top = `${y}px`;
@@ -237,7 +250,7 @@ export class ProfilePage {
       const barWidth = 100; // pixels
       const spacing = 20; // pixels
       const totalWidth = Math.max(container.clientWidth, data.length * (barWidth + spacing));
-      
+
       // Create and render graph
       const graph = new BarGraph(data, {
         width: totalWidth,
@@ -248,7 +261,7 @@ export class ProfilePage {
       const svg = graph.render();
       svg.style.display = 'block';
       innerContainer.appendChild(svg);
-      
+
     } catch (error) {
       console.error('Error rendering XP graph:', error);
       container.innerHTML = '<p class="text-gray-500 text-center">Failed to load XP graph</p>';
@@ -270,7 +283,7 @@ export class ProfilePage {
 
       // Clear container
       container.innerHTML = '';
-      
+
       // Create a responsive wrapper div with Tailwind classes
       const wrapper = document.createElement('div');
       wrapper.className = 'w-full h-full min-h-[250px] sm:min-h-[300px]';
@@ -285,13 +298,39 @@ export class ProfilePage {
       });
 
       wrapper.appendChild(lineGraph.render());
-      
+
       // Make the graph responsive
       lineGraph.makeResponsive(wrapper);
-      
+
     } catch (error) {
       console.error('Error rendering XP progress chart:', error);
       container.innerHTML = '<p class="text-gray-500 text-center">Failed to load XP progress chart</p>';
+    }
+  }
+
+  matchSkillsChartHeight() {
+    // Only apply on desktop layout (md and up)
+    if (window.innerWidth < 768) return;
+
+    const statsContainer = this.content.querySelector('.profile-info-cards');
+    const skillsChartContainer = this.content.querySelector('.md\\:w-3\\/5 .flex-grow');
+
+    if (statsContainer && skillsChartContainer) {
+      // Get the height of the stats container including the heading
+      const statsHeading = this.content.querySelector('.md\\:w-1\\/3 h3');
+      const statsHeight = statsContainer.offsetHeight + (statsHeading ? statsHeading.offsetHeight + 16 : 0); // 16px for margin
+
+      // Set the skills chart container height to match
+      skillsChartContainer.style.height = `${statsHeight}px`;
+
+      // Add resize listener to maintain equal heights
+      window.addEventListener('resize', () => {
+        if (window.innerWidth >= 768) {
+          skillsChartContainer.style.height = `${statsContainer.offsetHeight + (statsHeading ? statsHeading.offsetHeight + 16 : 0)}px`;
+        } else {
+          skillsChartContainer.style.height = ''; // Reset height on mobile
+        }
+      });
     }
   }
 
@@ -302,12 +341,12 @@ export class ProfilePage {
     try {
       // Get skills data - this might be a promise if fetchSkillsData is called
       let data = profileData.getSkillsData();
-      
+
       // If it's a promise, await it
       if (data instanceof Promise) {
         data = await data;
       }
-      
+
       console.log('Rendering skills chart with data:', data);
 
       // Ensure we have valid data
@@ -316,7 +355,7 @@ export class ProfilePage {
         container.innerHTML = '<p class="text-gray-500 text-center">Invalid skills data format</p>';
         return;
       }
-      
+
       // If we have less than 3 skills, show a message
       if (data.length < 3) {
         console.warn('Not enough skills data points:', data.length);
@@ -326,16 +365,16 @@ export class ProfilePage {
 
       // Clear container
       container.innerHTML = '';
-      
+
       // Create a responsive wrapper div with Tailwind classes
       const wrapper = document.createElement('div');
-      wrapper.className = 'w-full h-full min-h-[300px] sm:min-h-[350px] flex justify-center items-center';
+      wrapper.className = 'w-full h-full flex justify-center items-center';
       container.appendChild(wrapper);
 
-      // Create the chart with the validated data
+      // Create the chart with the validated data - using larger dimensions for better visibility
       const chart = new WebChart(data, {
-        width: 350,
-        height: 350,
+        width: 400,
+        height: 400,
         maxValue: 100,
         levels: 5,
         color: '#6366f1', // Tailwind indigo-500
@@ -344,12 +383,15 @@ export class ProfilePage {
       });
 
       wrapper.appendChild(chart.render());
-      
+
       // Make the chart responsive
       chart.makeResponsive(wrapper);
-      
+
       container.classList.add('graph-loaded');
-      
+
+      // Update heights after chart is rendered
+      setTimeout(() => this.matchSkillsChartHeight(), 100);
+
     } catch (error) {
       console.error('Error rendering skills chart:', error);
       container.innerHTML = '<p class="text-gray-500 text-center">Failed to load skills chart: ${error.message}</p>';
